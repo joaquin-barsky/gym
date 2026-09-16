@@ -45,7 +45,7 @@ export default function Settings() {
     <div className="space-y-5">
       <Header title="Ajustes" />
 
-      <section className="px-4">
+      <section className="px-5">
         <div className="label mb-2">Peso corporal</div>
         <div className="card p-3 space-y-3">
           <div className="flex gap-2">
@@ -60,7 +60,7 @@ export default function Settings() {
         </div>
       </section>
 
-      <section className="px-4">
+      <section className="px-5">
         <div className="label mb-2">Backup</div>
         <div className="card p-3 space-y-2">
           <div className="text-sm text-muted">Los datos viven solo en este teléfono. Exportá de vez en cuando por las dudas.</div>
@@ -72,7 +72,7 @@ export default function Settings() {
       </section>
 
       {!isStandalone && (
-        <section className="px-4">
+        <section className="px-5">
           <div className="label mb-2">Instalar como app</div>
           <div className="card p-3 text-sm space-y-1">
             <div className="font-semibold">iPhone (Safari)</div>
@@ -85,7 +85,7 @@ export default function Settings() {
         </section>
       )}
 
-      <section className="px-4">
+      <section className="px-5">
         <div className="label mb-2">Zona peligrosa</div>
         <button className="btn-danger w-full" onClick={async () => {
           if (!confirmDlg('¿Borrar TODO? Entrenamientos, rutina, ejercicios. No se puede deshacer.')) return

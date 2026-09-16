@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion } from 'motion/react'
 import { db, uid } from '../db'
 import { useActiveWorkout, useActivities, useDays, useExercises, useNow, useSoreness, useWorkouts } from '../hooks'
 import { computeRecovery, recoveryColor } from '../lib/recovery'
@@ -7,8 +8,12 @@ import BodyMap from '../components/BodyMap'
 import SorenessCard, { usePendingSoreness } from '../components/SorenessCard'
 import FootballSheet from '../components/FootballSheet'
 import { Sheet, confirmDlg } from '../components/ui'
+import { Item, Press, Ring, Stagger, itemVariants } from '../components/motion'
+import { IconBall, IconChevron, IconDumbbell } from '../components/icons'
 import { MUSCLE_LABEL } from '../muscles'
 import type { RoutineDay, SetEntry, Workout } from '../types'
+
+const WEEK_GOAL = 4
 
 export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => void; goBody: () => void }) {
   const days = useDays()
@@ -31,7 +36,7 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
       const last = lastFor(exerciseId, workouts)
       return { exerciseId, weight: last?.weight ?? 0, reps: last?.reps ?? 0, sets: last?.sets ?? 3, toFailure: false }
     })
-    await db.workouts.add({ id: uid(), dayId: day?.id, name: day ? `${day.emoji} ${day.name}` : '💪 Libre', startedAt: Date.now(), entries, muscles: [], failureMuscles: [] })
+    await db.workouts.add({ id: uid(), dayId: day?.id, name: day ? `${day.emoji} ${day.name}` : 'Libre', startedAt: Date.now(), entries, muscles: [], failureMuscles: [] })
     onOpenWorkout()
   }
 
@@ -42,54 +47,59 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
   const exName = (id: string) => exercises.find(e => e.id === id)?.name ?? '—'
   const fatigued = Object.values(recovery).filter(s => s.fraction < 1).sort((a, b) => a.fraction - b.fraction)
   const dateLabel = new Date(now).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const hour = new Date(now).getHours()
+  const greet = hour < 12 ? 'Buen día' : hour < 19 ? 'Buenas tardes' : 'Buenas noches'
+
+  const dayCard = 'card shrink-0 w-[136px] p-4 text-left'
+  const iconBox = 'w-11 h-11 rounded-2xl flex items-center justify-center mb-3'
 
   return (
-    <div className="space-y-6">
-      <div className="px-5 pt-4 flex items-end justify-between">
+    <Stagger className="space-y-7">
+      <Item className="px-5 pt-4 flex items-center justify-between">
         <div>
           <div className="label">{dateLabel}</div>
-          <h1 className="text-[32px] leading-tight font-extrabold tracking-tight">Hoy</h1>
+          <h1 className="text-[32px] leading-tight font-extrabold tracking-tight">{greet}</h1>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-extrabold leading-none">{thisWeek}</div>
-          <div className="text-[11px] text-muted font-semibold">esta semana</div>
-        </div>
-      </div>
+        <Ring value={thisWeek / WEEK_GOAL} size={58} stroke={5}>
+          <div className="text-center leading-none">
+            <div className="text-lg font-extrabold">{thisWeek}</div>
+            <div className="text-[9px] text-muted font-bold">/{WEEK_GOAL}</div>
+          </div>
+        </Ring>
+      </Item>
 
-      {pending && <SorenessCard workout={pending} />}
+      {pending && <Item><SorenessCard workout={pending} /></Item>}
 
-      <section>
-        <div className="px-5 flex items-center justify-between mb-3">
-          <div className="label">Empezar</div>
-        </div>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar px-5 snap-x">
+      <Item>
+        <div className="px-5 mb-3 label">Empezar</div>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar px-5">
           {days.map(d => (
-            <button key={d.id} onClick={() => start(d)} className="card snap-start shrink-0 w-[132px] p-4 text-left active:scale-[0.97] transition-transform">
-              <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center text-2xl mb-3">{d.emoji}</div>
+            <Press key={d.id} onClick={() => start(d)} className={dayCard}>
+              <div className={`${iconBox} bg-surface-3 text-2xl`}>{d.emoji}</div>
               <div className="font-extrabold text-[17px] leading-tight">{d.name}</div>
               <div className="text-muted text-xs mt-0.5">{d.exerciseIds.length} ejercicios</div>
-            </button>
+            </Press>
           ))}
-          <button onClick={() => start()} className="card snap-start shrink-0 w-[132px] p-4 text-left active:scale-[0.97] transition-transform border-dashed">
-            <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center text-2xl mb-3">💪</div>
+          <Press onClick={() => start()} className={`${dayCard} border-dashed`}>
+            <div className={`${iconBox} bg-accent/15 text-accent`}><IconDumbbell /></div>
             <div className="font-extrabold text-[17px] leading-tight">Libre</div>
             <div className="text-muted text-xs mt-0.5">sobre la marcha</div>
-          </button>
-          <button onClick={() => setFootball(true)} className="card snap-start shrink-0 w-[132px] p-4 text-left active:scale-[0.97] transition-transform">
-            <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center text-2xl mb-3">⚽</div>
+          </Press>
+          <Press onClick={() => setFootball(true)} className={dayCard}>
+            <div className={`${iconBox} bg-good/15 text-good`}><IconBall /></div>
             <div className="font-extrabold text-[17px] leading-tight">Fútbol</div>
             <div className="text-muted text-xs mt-0.5">registrar partido</div>
-          </button>
+          </Press>
           <div className="shrink-0 w-2" />
         </div>
-      </section>
+      </Item>
 
-      <section className="px-5">
+      <Item className="px-5">
         <div className="flex items-center justify-between mb-3">
           <div className="label">Estado muscular</div>
-          <button className="text-accent text-sm font-bold" onClick={goBody}>Ver detalle →</button>
+          <button className="text-accent text-sm font-bold flex items-center gap-0.5 h-8 -mr-1 px-1" onClick={goBody}>Ver detalle <IconChevron size={16} /></button>
         </div>
-        <div className="card p-4" onClick={goBody}>
+        <Press className="card p-4 w-full text-left" onClick={goBody}>
           <BodyMap colors={colors} className="h-64" />
           {fatigued.length > 0 ? (
             <div className="flex flex-wrap gap-1.5 mt-3 justify-center">
@@ -100,25 +110,28 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
               ))}
             </div>
           ) : <div className="text-center text-good text-sm font-bold mt-2">Todo recuperado</div>}
-        </div>
-      </section>
+        </Press>
+      </Item>
 
-      <section className="px-5">
+      <Item className="px-5">
         <div className="label mb-3">Últimos entrenamientos</div>
-        {recent.length === 0 && <div className="card p-5 text-muted text-sm text-center">Todavía no hay entrenamientos.<br />Elegí un día arriba y arrancá.</div>}
+        {recent.length === 0 && <div className="card p-6 text-muted text-sm text-center leading-relaxed">Todavía no hay entrenamientos.<br />Elegí un día arriba y arrancá.</div>}
         <div className="space-y-2">
           {recent.map(w => (
-            <button key={w.id} onClick={() => setDetail(w)} className="card w-full p-3.5 text-left flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center text-xl shrink-0">{w.name.split(' ')[0]}</div>
-              <div className="flex-1 min-w-0">
-                <div className="font-extrabold truncate">{w.name.split(' ').slice(1).join(' ') || w.name}</div>
-                <div className="text-muted text-xs">{w.entries.length} ejercicios · {fmtKg(totalVolume(w))} kg</div>
-              </div>
-              <div className="text-muted text-xs font-semibold">{relTime(w.finishedAt!, now)}</div>
-            </button>
+            <motion.div key={w.id} variants={itemVariants}>
+              <Press onClick={() => setDetail(w)} className="card w-full p-3.5 text-left flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center text-xl shrink-0">{/\p{Emoji}/u.test(w.name.split(' ')[0]) ? w.name.split(' ')[0] : <IconDumbbell size={20} className="text-muted" />}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-extrabold truncate">{w.name.replace(/^\p{Emoji}\S*\s*/u, '')}</div>
+                  <div className="text-muted text-xs">{w.entries.length} ejercicios · {fmtKg(totalVolume(w))} kg</div>
+                </div>
+                <div className="text-muted text-xs font-semibold">{relTime(w.finishedAt!, now)}</div>
+                <IconChevron size={16} className="text-muted -mr-1" />
+              </Press>
+            </motion.div>
           ))}
         </div>
-      </section>
+      </Item>
 
       <FootballSheet open={football} onClose={() => setFootball(false)} />
 
@@ -148,6 +161,6 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
           </div>
         )}
       </Sheet>
-    </div>
+    </Stagger>
   )
 }

@@ -4,7 +4,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import { useExercises, useWorkouts } from '../hooks'
 import { bestFor, fmtDate, fmtKg, historyFor, setsPerMusclePerWeek, workoutsPerWeek } from '../lib/stats'
-import { Chip, Empty, Header } from '../components/ui'
+import { Empty, Header, Segmented } from '../components/ui'
+import { Item, Stagger } from '../components/motion'
 import { MUSCLE_GROUPS } from '../muscles'
 import type { BodyWeight, MuscleId } from '../types'
 
@@ -88,15 +89,14 @@ export default function Progress() {
   const deltaText = delta === null ? undefined : `${delta >= 0 ? '+' : ''}${fmtKg(delta)} kg desde la primera`
 
   return (
-    <div className="space-y-4">
-      <Header title="Progreso" />
-      <div className="px-4 flex gap-2">
-        <Chip active={mode === 'exercise'} onClick={() => setMode('exercise')}>Por ejercicio</Chip>
-        <Chip active={mode === 'general'} onClick={() => setMode('general')}>General</Chip>
-      </div>
+    <Stagger className="space-y-5">
+      <Item><Header title="Progreso" subtitle="Tu evolución" /></Item>
+      <Item className="px-5">
+        <Segmented value={mode} onChange={setMode} options={[{ value: 'exercise', label: 'Por ejercicio' }, { value: 'general', label: 'General' }]} />
+      </Item>
 
       {mode === 'exercise' && (
-        <div className="px-4 space-y-3">
+        <Item className="px-5 space-y-3">
           {withHistory.length === 0 ? <Empty>Cuando termines tu primer entrenamiento vas a ver acá tu evolución por ejercicio.</Empty> : (
             <>
               <select className="input font-semibold" value={current?.id ?? ''} onChange={e => setExId(e.target.value)}>
@@ -123,11 +123,11 @@ export default function Progress() {
               </div>
             </>
           )}
-        </div>
+        </Item>
       )}
 
       {mode === 'general' && (
-        <div className="px-4 space-y-3">
+        <Item className="px-5 space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <Tile label="Entrenamientos" value={String(workouts.filter(w => w.finishedAt).length)} sub="en total" />
             <Tile label="Esta semana" value={String(perWeek[perWeek.length - 1]?.n ?? 0)} sub={`${perWeek[perWeek.length - 2]?.n ?? 0} la semana pasada`} />
@@ -151,8 +151,8 @@ export default function Progress() {
           {bwData.length > 0 ? <Chart title="Peso corporal (kg)" data={bwData} dataKey="kg" color="#ff4d5e" unit=" kg" /> : (
             <div className="text-muted text-xs text-center">Podés registrar tu peso corporal desde Ajustes.</div>
           )}
-        </div>
+        </Item>
       )}
-    </div>
+    </Stagger>
   )
 }

@@ -4,6 +4,7 @@ import { useExercises } from '../hooks'
 import { MUSCLES, MUSCLE_GROUPS, MUSCLE_LABEL } from '../muscles'
 import type { Exercise, MuscleId } from '../types'
 import { Chip, Sheet } from './ui'
+import { IconPlus } from './icons'
 
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
@@ -87,15 +88,15 @@ export default function ExercisePicker({ open, onClose, onPick, exclude = [] }: 
             <Chip active={group === null} onClick={() => setGroup(null)}>Todos</Chip>
             {MUSCLE_GROUPS.map(g => <Chip key={g.label} active={group === g.label} onClick={() => setGroup(g.label)}>{g.label}</Chip>)}
           </div>
-          <button className="btn-ghost w-full" onClick={() => setCreating(true)}>＋ Crear ejercicio nuevo</button>
-          <div className="divide-y divide-border">
+          <button className="btn-ghost w-full" onClick={() => setCreating(true)}><IconPlus size={18} /> Crear ejercicio nuevo</button>
+          <div className="card divide-y divide-border">
             {list.map(e => (
-              <button key={e.id} className="w-full text-left py-3 flex items-center justify-between gap-3" onClick={() => onPick(e)}>
+              <button key={e.id} className="w-full text-left px-4 py-3 min-h-14 flex items-center justify-between gap-3" onClick={() => onPick(e)}>
                 <div>
                   <div className="font-semibold">{e.name}</div>
                   <div className="text-xs text-muted">{e.muscles.map(m => MUSCLE_LABEL[m]).join(', ')}</div>
                 </div>
-                <span className="text-accent text-xl">＋</span>
+                <span className="w-9 h-9 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0"><IconPlus size={18} /></span>
               </button>
             ))}
             {list.length === 0 && <div className="text-muted text-sm py-6 text-center">Sin resultados</div>}

@@ -36,7 +36,7 @@ export default function SorenessCard({ workout }: { workout: Workout }) {
   const skip = () => db.settings.put({ key: 'soreness_dismissed', value: [...dismissed, workout.id] })
 
   return (
-    <div className="card p-4 mx-4 border-accent/40">
+    <div className="card p-4 mx-5 border-accent/40">
       <div className="font-bold text-base">¿Cómo tenés los músculos? 🤕</div>
       <div className="text-muted text-sm mb-3">Del entrenamiento {workout.name} · {fmtDateLong(workout.finishedAt!)}</div>
       <div className="space-y-2">

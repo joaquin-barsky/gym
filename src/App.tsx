@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { seedIfEmpty } from './db'
 import { useActiveWorkout } from './hooks'
+import { easeOut, spring } from './components/motion'
 import Home from './pages/Home'
 import Routine from './pages/Routine'
 import Progress from './pages/Progress'
@@ -37,40 +39,57 @@ export default function App() {
 
   if (!ready) return <div className="h-full flex items-center justify-center text-muted">Cargando…</div>
 
-  if (workoutOpen && active) {
-    return <WorkoutPage workout={active} onClose={() => setWorkoutOpen(false)} />
-  }
-
   return (
-    <div className="h-full flex flex-col">
-      <div className="safe-top bg-bg" />
-      <main className="flex-1 overflow-y-auto pb-6" key={tab}>
-        <div className="animate-rise">
-          {tab === 'home' && <Home onOpenWorkout={() => setWorkoutOpen(true)} goBody={() => setTab('body')} />}
-          {tab === 'routine' && <Routine />}
-          {tab === 'progress' && <Progress />}
-          {tab === 'body' && <Body />}
-          {tab === 'settings' && <Settings />}
-        </div>
-      </main>
-      {active && !workoutOpen && (
-        <button onClick={() => setWorkoutOpen(true)} className="mx-4 mb-2 btn-primary justify-between">
-          <span>Entrenamiento en curso · {active.name}</span><span>Continuar →</span>
-        </button>
-      )}
-      <nav className="safe-bottom bg-surface/95 backdrop-blur border-t border-border">
-        <div className="flex">
-          {TABS.map(t => {
-            const on = tab === t.id
-            return (
-              <button key={t.id} onClick={() => setTab(t.id)} className={`flex-1 flex flex-col items-center pt-2.5 pb-1.5 gap-1 ${on ? 'text-accent' : 'text-muted'}`}>
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth={on ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">{t.icon}</svg>
-                <span className="text-[10.5px] font-bold">{t.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </nav>
-    </div>
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence mode="wait" initial={false}>
+        {workoutOpen && active ? (
+          <motion.div key="workout" className="h-full" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24, transition: { duration: 0.16 } }} transition={{ duration: 0.28, ease: easeOut }}>
+            <WorkoutPage workout={active} onClose={() => setWorkoutOpen(false)} />
+          </motion.div>
+        ) : (
+          <motion.div key="shell" className="h-full flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} transition={{ duration: 0.2 }}>
+            <div className="safe-top bg-bg" />
+            <main className="flex-1 overflow-y-auto pb-[120px]">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.12 } }} transition={{ duration: 0.22, ease: easeOut }}>
+                  {tab === 'home' && <Home onOpenWorkout={() => setWorkoutOpen(true)} goBody={() => setTab('body')} />}
+                  {tab === 'routine' && <Routine />}
+                  {tab === 'progress' && <Progress />}
+                  {tab === 'body' && <Body />}
+                  {tab === 'settings' && <Settings />}
+                </motion.div>
+              </AnimatePresence>
+            </main>
+
+            <div className="fixed left-4 right-4 z-40 flex flex-col gap-2" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+              <AnimatePresence>
+                {active && (
+                  <motion.button key="resume" onClick={() => setWorkoutOpen(true)} whileTap={{ scale: 0.97 }}
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }} transition={spring}
+                    className="btn-primary justify-between rounded-[22px] h-14">
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-white animate-pulse" />En curso · {active.name}</span>
+                    <span className="opacity-90">Continuar →</span>
+                  </motion.button>
+                )}
+              </AnimatePresence>
+              <nav className="nav-bar h-[68px] rounded-[26px] px-1.5 flex items-center">
+                {TABS.map(t => {
+                  const on = tab === t.id
+                  return (
+                    <motion.button key={t.id} onClick={() => setTab(t.id)} whileTap={{ scale: 0.9 }} transition={spring}
+                      className={`relative flex-1 h-[56px] flex flex-col items-center justify-center gap-0.5 rounded-[20px] ${on ? 'text-accent' : 'text-muted'}`}
+                      aria-label={t.label} aria-current={on ? 'page' : undefined}>
+                      {on && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-[20px] bg-accent/15" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+                      <motion.svg animate={{ y: on ? -1 : 0, scale: on ? 1.06 : 1 }} transition={spring} className="relative" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth={on ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">{t.icon}</motion.svg>
+                      <span className="relative text-[10.5px] font-bold">{t.label}</span>
+                    </motion.button>
+                  )
+                })}
+              </nav>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </MotionConfig>
   )
 }
