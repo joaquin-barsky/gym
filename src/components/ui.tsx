@@ -32,15 +32,15 @@ export function Stepper({ value, onChange, step = 1, min = 0, label, suffix, big
   const round = (v: number) => Math.round(v * 100) / 100
   return (
     <div className="flex-1">
-      <div className="label mb-1">{label}{suffix ? ` (${suffix})` : ''}</div>
-      <div className="flex items-stretch bg-surface-2 border border-border rounded-xl overflow-hidden">
+      <div className="label mb-1.5">{label}{suffix ? ` ${suffix}` : ''}</div>
+      <div className="flex items-stretch bg-surface-2 border border-border rounded-2xl overflow-hidden">
         <button className="px-2.5 text-xl text-muted active:bg-border" onClick={() => onChange(round(Math.max(min, value - step)))}>−</button>
         <div className="flex-1 flex items-center justify-center relative">
           <input
             type="number"
             inputMode="decimal"
             step={step}
-            className={`w-full bg-transparent text-center outline-none py-2 ${big ? "text-xl" : "text-base"} font-bold`}
+            className={`w-full bg-transparent text-center outline-none py-2 ${big ? "text-[22px]" : "text-lg"} font-extrabold`}
             value={Number.isNaN(value) ? '' : value}
             onChange={e => onChange(e.target.value === '' ? NaN : parseFloat(e.target.value))}
             onFocus={e => e.target.select()}
@@ -69,7 +69,7 @@ export function Chip({ active, onClick, children, color }: { active?: boolean; o
       type="button"
       onClick={onClick}
       style={active && color ? { background: color, borderColor: color, color: '#0b0f14' } : undefined}
-      className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${active ? 'bg-accent border-accent text-white' : 'bg-surface-2 border-border text-muted'}`}
+      className={`px-3.5 py-2 rounded-full text-sm font-bold border transition-colors ${active ? 'bg-accent border-accent text-white' : 'bg-surface-2 border-border text-muted'}`}
     >
       {children}
     </button>
@@ -82,10 +82,10 @@ export function Empty({ children }: { children: ReactNode }) {
 
 export function Header({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
   return (
-    <div className="flex items-end justify-between px-5 pt-3 pb-3">
+    <div className="flex items-end justify-between px-5 pt-4 pb-4">
       <div>
-        {subtitle && <div className="text-muted text-sm">{subtitle}</div>}
-        <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
+        {subtitle && <div className="label">{subtitle}</div>}
+        <h1 className="text-[32px] leading-tight font-extrabold tracking-tight">{title}</h1>
       </div>
       {right}
     </div>

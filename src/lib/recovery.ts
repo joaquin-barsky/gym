@@ -63,12 +63,21 @@ export function computeRecovery(
   return result
 }
 
-/** Rojo (0) -> amarillo (0.5) -> verde (1). */
+/** Rojo (0) -> ambar (0.5) -> verde (1), en tonos que combinan con la UI oscura. */
+const STOPS: [number, [number, number, number]][] = [
+  [0, [255, 77, 94]],
+  [0.5, [245, 185, 66]],
+  [1, [46, 160, 104]],
+]
 export function recoveryColor(fraction: number): string {
   const f = Math.min(1, Math.max(0, fraction))
-  const hue = f < 0.5 ? f * 2 * 60 : 60 + (f - 0.5) * 2 * 70
-  const light = 48 + (1 - Math.abs(f - 0.5) * 2) * 4
-  return `hsl(${hue.toFixed(0)} 85% ${light.toFixed(0)}%)`
+  let i = 0
+  while (i < STOPS.length - 2 && f > STOPS[i + 1][0]) i++
+  const [f0, c0] = STOPS[i]
+  const [f1, c1] = STOPS[i + 1]
+  const t = (f - f0) / (f1 - f0)
+  const c = c0.map((v, k) => Math.round(v + (c1[k] - v) * t))
+  return `rgb(${c[0]} ${c[1]} ${c[2]})`
 }
 
 export function recoveryLabel(fraction: number): string {
