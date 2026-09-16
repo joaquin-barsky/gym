@@ -9,6 +9,7 @@ import { Sheet, Stepper, Toggle, confirmDlg } from '../components/ui'
 import { Press, spring } from '../components/motion'
 import { IconBack, IconDown, IconPlus, IconTrophy, IconUp, IconX } from '../components/icons'
 import { MUSCLE_LABEL } from '../muscles'
+import { V2_REFERENCE } from '../data/routineV2'
 import type { Exercise, MuscleId, SetEntry, Workout } from '../types'
 
 const BADGE: Record<Compare, { text: string; cls: string; icon?: 'up' | 'down' | 'trophy' }> = {
@@ -171,16 +172,18 @@ export default function WorkoutPage({ workout, onClose }: { workout: Workout; on
 
       <ExercisePicker open={picker} onClose={() => setPicker(false)} exclude={entries.map(e => e.exerciseId)} onPick={ex => {
         const last = lastFor(ex.id, workouts, workout.id)
-        update(prev => [...prev, { exerciseId: ex.id, weight: last?.weight ?? 0, reps: last?.reps ?? 0, sets: last?.sets ?? 3, toFailure: false }])
+        const ref = V2_REFERENCE[ex.id]
+        update(prev => [...prev, { exerciseId: ex.id, weight: last?.weight ?? ref?.weight ?? 0, reps: last?.reps ?? ref?.reps ?? 0, sets: last?.sets ?? ref?.sets ?? 3, toFailure: false }])
         setPicker(false)
       }} />
 
       <Sheet open={finishing} onClose={() => setFinishing(false)} title="¿Qué entrenaste?" full>
         <div className="space-y-4">
           <div className="text-muted text-sm">Tocá el muñequito para agregar o sacar músculos.</div>
-          <BodyMap colors={selColors} selected={selected} className="h-72" onPick={m => {
+          <BodyMap colors={selColors} selected={selected} className="h-72" onPick={ids => {
             const s = new Set(selected)
-            if (s.has(m)) s.delete(m); else s.add(m)
+            const anyOn = ids.some(i => s.has(i))
+            for (const i of ids) { if (anyOn) s.delete(i); else s.add(i) }
             setSelected(s)
           }} />
           <div className="flex flex-wrap gap-1.5 justify-center">

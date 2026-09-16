@@ -1,4 +1,5 @@
 import type { Exercise, MuscleId, RoutineDay } from '../types'
+import { V2_DAYS, V2_EXERCISES } from './routineV2'
 
 type Def = [string, MuscleId[], MuscleId[], boolean?]
 
@@ -93,7 +94,7 @@ const PRETTY: Record<string, string> = {
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
 
-export const DEFAULT_EXERCISES: Exercise[] = defs.map(([name, muscles, secondary, bodyweight], i) => ({
+const BASE_EXERCISES: Exercise[] = defs.map(([name, muscles, secondary, bodyweight], i) => ({
   id: 'ex_' + slug(name),
   name: PRETTY[name] ?? name,
   muscles,
@@ -102,8 +103,6 @@ export const DEFAULT_EXERCISES: Exercise[] = defs.map(([name, muscles, secondary
   createdAt: 1 + i,
 }))
 
-export const DEFAULT_DAYS: RoutineDay[] = [
-  { id: 'day_push', name: 'Push', emoji: '🔥', order: 0, exerciseIds: ['ex_press_banca', 'ex_press_inclinado_con_mancuernas', 'ex_press_militar', 'ex_elevaciones_laterales', 'ex_extension_de_triceps_en_polea', 'ex_press_frances'] },
-  { id: 'day_pull', name: 'Pull', emoji: '🧲', order: 1, exerciseIds: ['ex_dominadas', 'ex_remo_con_barra', 'ex_jalon_al_pecho', 'ex_remo_en_polea_baja', 'ex_face_pull', 'ex_curl_con_barra', 'ex_curl_martillo'] },
-  { id: 'day_legs', name: 'Legs', emoji: '🦵', order: 2, exerciseIds: ['ex_sentadilla', 'ex_prensa_de_piernas', 'ex_peso_muerto_rumano', 'ex_extension_de_cuadriceps', 'ex_curl_femoral_acostado', 'ex_elevacion_de_gemelos_de_pie'] },
-]
+export const DEFAULT_EXERCISES: Exercise[] = [...BASE_EXERCISES, ...V2_EXERCISES]
+
+export const DEFAULT_DAYS: RoutineDay[] = V2_DAYS

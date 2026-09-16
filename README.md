@@ -27,3 +27,7 @@ npm run dev
 - Tope: 60 h. Fútbol pinta piernas y core con una ventana más corta (26–42 h según intensidad).
 
 Stack: Vite + React + TypeScript + Tailwind v4 + Dexie (IndexedDB) + Recharts + vite-plugin-pwa.
+
+## Créditos
+
+El modelo anatómico del muñequito proviene de [react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter) (MIT).

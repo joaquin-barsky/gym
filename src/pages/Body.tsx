@@ -25,6 +25,7 @@ export default function Body() {
 
   const recovery = computeRecovery(workouts, soreness, activities, now)
   const colors = Object.fromEntries(Object.values(recovery).map(s => [s.muscle, recoveryColor(s.fraction)]))
+  const fraction = Object.fromEntries(Object.values(recovery).map(s => [s.muscle, s.fraction]))
   const list = Object.values(recovery).sort((a, b) => a.fraction - b.fraction)
   const sel = picked ? recovery[picked] : null
   const recentActivities = activities.filter(a => now - a.date < 7 * 86_400_000).sort((a, b) => b.date - a.date)
@@ -42,7 +43,7 @@ export default function Body() {
       </Item>
       <Item className="px-5">
         <div className="card p-4">
-          <BodyMap colors={colors} view={view} className={view === 'both' ? 'h-80' : 'h-[26rem]'} onPick={m => setPicked(m === picked ? null : m)} selected={picked ? new Set([picked]) : undefined} />
+          <BodyMap colors={colors} fraction={fraction} view={view} className={view === 'both' ? 'h-80' : 'h-[26rem]'} onPick={ids => { const m = ids.find(i => i !== picked) ?? ids[0]; setPicked(ids.includes(picked as MuscleId) && ids.length === 1 ? null : m) }} selected={picked ? new Set([picked]) : undefined} />
           <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-muted font-semibold">
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: recoveryColor(0) }} />Fatigado</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: recoveryColor(0.5) }} />Recuperando</span>

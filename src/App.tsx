@@ -10,6 +10,7 @@ import Progress from './pages/Progress'
 import Body from './pages/Body'
 import Settings from './pages/Settings'
 import WorkoutPage from './pages/WorkoutPage'
+import Splash from './components/Splash'
 
 type Tab = 'home' | 'routine' | 'progress' | 'body' | 'settings'
 
@@ -33,6 +34,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('home')
   const [ready, setReady] = useState(false)
   const [workoutOpen, setWorkoutOpen] = useState(false)
+  const [splash, setSplash] = useState(true)
   const active = useActiveWorkout()
   const theme = useSetting<string>('theme', DEFAULT_THEME)
 
@@ -40,10 +42,10 @@ export default function App() {
   useEffect(() => { applyTheme(theme) }, [theme])
   useEffect(() => { if (active === null) setWorkoutOpen(false) }, [active])
 
-  if (!ready) return <div className="h-full flex items-center justify-center text-muted">Cargando…</div>
-
   return (
     <MotionConfig reducedMotion="user">
+      <AnimatePresence>{splash && <Splash key="splash" onDone={() => setSplash(false)} />}</AnimatePresence>
+      {!ready ? <div className="h-full bg-bg" /> : (
       <AnimatePresence mode="wait" initial={false}>
         {workoutOpen && active ? (
           <motion.div key="workout" className="h-full" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24, transition: { duration: 0.16 } }} transition={{ duration: 0.28, ease: easeOut }}>
@@ -64,7 +66,7 @@ export default function App() {
               </AnimatePresence>
             </main>
 
-            <div className="absolute left-0 right-0 z-40 flex flex-col items-center gap-2.5 px-6 pointer-events-none" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 14px)' }}>
+            <div className="absolute left-0 right-0 z-40 flex flex-col items-center gap-2.5 px-6 pointer-events-none" style={{ bottom: 'max(calc(env(safe-area-inset-bottom) - 10px), 12px)' }}>
               <AnimatePresence>
                 {active && (
                   <motion.button key="resume" onClick={() => setWorkoutOpen(true)} whileTap={{ scale: 0.97 }}
@@ -92,6 +94,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      )}
     </MotionConfig>
   )
 }

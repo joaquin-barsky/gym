@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie'
 import type { Activity, BodyWeight, Exercise, RoutineDay, Setting, Soreness, Workout } from './types'
 import { DEFAULT_DAYS, DEFAULT_EXERCISES } from './data/defaultExercises'
+import { V2_DAYS, V2_EXERCISES, V2_SEED_WORKOUT } from './data/routineV2'
 
 export class GymDB extends Dexie {
   exercises!: Table<Exercise, string>
@@ -34,6 +35,21 @@ export async function seedIfEmpty() {
     if ((await db.exercises.count()) > 0) return
     await db.exercises.bulkPut(DEFAULT_EXERCISES)
     await db.days.bulkPut(DEFAULT_DAYS)
+  })
+  await migrateRoutineV2()
+}
+
+/** Pasa de Push/Pull/Legs a la rutina por músculo y carga el entrenamiento del 15/09. Corre una sola vez. */
+async function migrateRoutineV2() {
+  if (await db.settings.get('routine_v2')) return
+  await db.transaction('rw', db.exercises, db.days, db.workouts, db.settings, async () => {
+    for (const ex of V2_EXERCISES) if (!(await db.exercises.get(ex.id))) await db.exercises.add(ex)
+    await db.days.bulkDelete(['day_push', 'day_pull', 'day_legs'])
+    for (const d of V2_DAYS) if (!(await db.days.get(d.id))) await db.days.add(d)
+    if (!(await db.workouts.get(V2_SEED_WORKOUT.id))) {
+      await db.workouts.add({ ...V2_SEED_WORKOUT, muscles: [...V2_SEED_WORKOUT.muscles], failureMuscles: [] })
+    }
+    await db.settings.put({ key: 'routine_v2', value: true })
   })
 }
 

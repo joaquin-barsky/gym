@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { db, uid } from '../db'
 import { useActiveWorkout, useActivities, useDays, useExercises, useNow, useSoreness, useWorkouts } from '../hooks'
 import { computeRecovery, recoveryColor } from '../lib/recovery'
@@ -11,6 +11,8 @@ import FootballSheet from '../components/FootballSheet'
 import { Sheet, confirmDlg } from '../components/ui'
 import { Item, Press, Stagger, itemVariants } from '../components/motion'
 import { IconBall, IconCheck, IconChevron, IconDumbbell, IconFlame } from '../components/icons'
+import { V2_REFERENCE } from '../data/routineV2'
+import { spring } from '../components/motion'
 import { MUSCLE_LABEL } from '../muscles'
 import type { RoutineDay, SetEntry, Workout } from '../types'
 
@@ -45,19 +47,27 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
   const [phrase] = useState(randomPhrase)
   const [football, setFootball] = useState(false)
   const [detail, setDetail] = useState<Workout | null>(null)
+  const [picked, setPicked] = useState<string[]>([])
 
   const recovery = computeRecovery(workouts, soreness, activities, now)
   const colors = Object.fromEntries(Object.values(recovery).map(s => [s.muscle, recoveryColor(s.fraction)]))
+  const fraction = Object.fromEntries(Object.values(recovery).map(s => [s.muscle, s.fraction]))
 
-  const start = async (day?: RoutineDay) => {
+  const start = async (selected: RoutineDay[]) => {
     if (active) { onOpenWorkout(); return }
-    const entries: SetEntry[] = (day?.exerciseIds ?? []).map(exerciseId => {
+    const ids = [...new Set(selected.flatMap(d => d.exerciseIds))]
+    const entries: SetEntry[] = ids.map(exerciseId => {
       const last = lastFor(exerciseId, workouts)
-      return { exerciseId, weight: last?.weight ?? 0, reps: last?.reps ?? 0, sets: last?.sets ?? 3, toFailure: false }
+      const ref = V2_REFERENCE[exerciseId]
+      return { exerciseId, weight: last?.weight ?? ref?.weight ?? 0, reps: last?.reps ?? ref?.reps ?? 0, sets: last?.sets ?? ref?.sets ?? 3, toFailure: false }
     })
-    await db.workouts.add({ id: uid(), dayId: day?.id, name: day ? `${day.emoji} ${day.name}` : 'Libre', startedAt: Date.now(), entries, muscles: [], failureMuscles: [] })
+    const name = selected.length ? selected.map(d => d.name).join(' · ') : 'Libre'
+    await db.workouts.add({ id: uid(), dayId: selected[0]?.id, name, startedAt: Date.now(), entries, muscles: [], failureMuscles: [] })
+    setPicked([])
     onOpenWorkout()
   }
+  const toggle = (id: string) => setPicked(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]))
+  const pickedDays = days.filter(d => picked.includes(d.id))
 
   const finished = workouts.filter(w => w.finishedAt)
   const recent = [...finished].sort((a, b) => b.finishedAt! - a.finishedAt!).slice(0, 6)
@@ -69,7 +79,6 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
   const fatigued = Object.values(recovery).filter(s => s.fraction < 1).sort((a, b) => a.fraction - b.fraction)
   const dateLabel = new Date(now).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
 
-  const pill = 'h-11 px-4 rounded-full font-bold text-[15px] flex items-center gap-2 bg-on-accent text-accent'
 
   return (
     <div className="glow">
@@ -96,12 +105,35 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
               </div>
               <div className="w-11 h-11 rounded-full bg-on-accent/15 flex items-center justify-center"><IconDumbbell size={22} /></div>
             </div>
-            <div className="flex flex-wrap gap-2 mt-5">
-              {days.map(d => (
-                <Press key={d.id} onClick={() => start(d)} className={pill}><span>{d.emoji}</span>{d.name}</Press>
-              ))}
-              <Press onClick={() => start()} className="h-11 px-4 rounded-full font-bold text-[15px] flex items-center gap-2 border-2 border-on-accent/30 text-on-accent">Libre</Press>
+            <div className="text-sm opacity-70 mt-1">Elegí uno o varios músculos.</div>
+            <div className="flex flex-wrap gap-2 mt-4">
+              {days.map(d => {
+                const on = picked.includes(d.id)
+                return (
+                  <Press key={d.id} onClick={() => toggle(d.id)} aria-pressed={on}
+                    className={`h-11 px-4 rounded-full font-bold text-[15px] flex items-center gap-2 border-2 transition-colors ${on ? 'bg-on-accent text-accent border-on-accent' : 'border-on-accent/30 text-on-accent'}`}>
+                    <span>{d.emoji}</span>{d.name}
+                  </Press>
+                )
+              })}
               <Press onClick={() => setFootball(true)} className="h-11 px-4 rounded-full font-bold text-[15px] flex items-center gap-2 border-2 border-on-accent/30 text-on-accent"><IconBall size={18} /> Fútbol</Press>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {pickedDays.length > 0 ? (
+                  <motion.div key="go" className="flex-1" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={spring}>
+                    <Press onClick={() => start(pickedDays)} className="w-full h-14 rounded-full bg-on-accent text-accent font-extrabold text-base flex items-center justify-center gap-2">
+                      Empezar {pickedDays.map(d => d.name).join(' + ')} <IconChevron size={18} />
+                    </Press>
+                  </motion.div>
+                ) : (
+                  <motion.div key="free" className="flex-1" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={spring}>
+                    <Press onClick={() => start([])} className="w-full h-12 rounded-full border-2 border-on-accent/30 text-on-accent font-bold text-[15px] flex items-center justify-center gap-2">
+                      Entrenamiento libre <IconChevron size={18} />
+                    </Press>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </Item>
@@ -112,7 +144,7 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
             <button className="text-accent text-sm font-bold flex items-center gap-0.5 h-8 -mr-1 px-1" onClick={goBody}>Ver detalle <IconChevron size={16} /></button>
           </div>
           <Press className="card p-4 w-full text-left" onClick={goBody}>
-            <BodyMap colors={colors} className="h-64" />
+            <BodyMap colors={colors} fraction={fraction} className="h-64" />
             {fatigued.length > 0 ? (
               <div className="flex flex-wrap gap-1.5 mt-3 justify-center">
                 {fatigued.slice(0, 6).map(s => (
