@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { db, uid } from '../db'
-import { useActiveWorkout, useActivities, useDays, useExercises, useNow, useSoreness, useWorkouts } from '../hooks'
+import { useActiveWorkout, useActivities, useDays, useExercises, useNow, useSetting, useSoreness, useWorkouts } from '../hooks'
 import { computeRecovery, recoveryColor } from '../lib/recovery'
 import { fmtDateLong, fmtKg, lastFor, recentPRs, relTime, startOfWeek, totalVolume, volumePerWeek, weekDays } from '../lib/stats'
 import BodyMap from '../components/BodyMap'
@@ -14,7 +14,6 @@ import { V2_REFERENCE } from '../data/routineV2'
 import { MUSCLE_LABEL } from '../muscles'
 import type { RoutineDay, SetEntry, Workout } from '../types'
 
-const WEEK_GOAL = 4
 const DAY_LETTERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
 function weekStreak(finishedAt: number[], now: number): number {
@@ -63,6 +62,7 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
   const active = useActiveWorkout()
   const pending = usePendingSoreness()
   const now = useNow()
+  const WEEK_GOAL = useSetting<number>('week_goal', 4)
   const [detail, setDetail] = useState<Workout | null>(null)
   const [picked, setPicked] = useState<string[]>([])
 

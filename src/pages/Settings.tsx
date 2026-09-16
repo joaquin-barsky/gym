@@ -31,6 +31,7 @@ function ThemeSwatch({ id, name, vars, active, onPick }: { id: string; name: str
 export default function Settings() {
   const bw = useLiveQuery(() => db.bodyweight.orderBy('date').reverse().limit(5).toArray(), [], [] as BodyWeight[])
   const theme = useSetting<string>('theme', DEFAULT_THEME)
+  const goal = useSetting<number>('week_goal', 4)
   const [kg, setKg] = useState('')
   const [msg, setMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -76,6 +77,20 @@ export default function Settings() {
         <div className="grid grid-cols-2 gap-3">
           {THEMES.map(t => (
             <ThemeSwatch key={t.id} id={t.id} name={t.name} vars={t.vars} active={theme === t.id} onPick={() => db.settings.put({ key: 'theme', value: t.id })} />
+          ))}
+        </div>
+      </Item>
+
+      <Item className="px-5">
+        <div className="text-[17px] font-extrabold mb-1">Meta semanal</div>
+        <div className="text-muted text-sm mb-3">Cuántos entrenamientos querés hacer por semana. Es lo que marca el anillo de Inicio.</div>
+        <div className="card p-2 flex gap-1">
+          {[2, 3, 4, 5, 6, 7].map(n => (
+            <motion.button key={n} whileTap={{ scale: 0.92 }} transition={spring} onClick={() => db.settings.put({ key: 'week_goal', value: n })}
+              className={`relative flex-1 h-12 rounded-full font-extrabold text-base tabular-nums ${goal === n ? 'text-on-accent' : 'text-muted'}`} aria-pressed={goal === n}>
+              {goal === n && <motion.span layoutId="goal-pill" className="absolute inset-0 rounded-full bg-accent" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+              <span className="relative">{n}</span>
+            </motion.button>
           ))}
         </div>
       </Item>
