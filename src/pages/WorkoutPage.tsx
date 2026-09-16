@@ -7,6 +7,8 @@ import BodyMap from '../components/BodyMap'
 import ExercisePicker from '../components/ExercisePicker'
 import { Sheet, Stepper, Toggle, confirmDlg } from '../components/ui'
 import { Press, spring } from '../components/motion'
+import TimerView from '../components/TimerView'
+import { elapsedOf, fmtClock, useClock, useTimer } from '../lib/timer'
 import { IconBack, IconDown, IconPlus, IconTrophy, IconUp, IconX } from '../components/icons'
 import { MUSCLE_LABEL } from '../muscles'
 import { V2_REFERENCE } from '../data/routineV2'
@@ -61,14 +63,16 @@ function EntryCard({ entry, exercise, workouts, workoutId, index, onChange, onRe
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Stepper label={exercise?.bodyweight ? 'Lastre' : 'Peso'} suffix="kg" value={entry.weight} step={2.5} onChange={v => onChange({ ...entry, weight: v })} big />
         <Stepper label="Reps" value={entry.reps} step={1} onChange={v => onChange({ ...entry, reps: v })} big />
         <Stepper label="Series" value={entry.sets} step={1} min={1} onChange={v => onChange({ ...entry, sets: v })} />
+        <div className="flex items-end pb-3.5 pl-1">
+          <Toggle value={entry.toFailure} onChange={v => onChange({ ...entry, toFailure: v })} label="Al fallo" />
+        </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 min-h-8">
-        <Toggle value={entry.toFailure} onChange={v => onChange({ ...entry, toFailure: v })} label="Al fallo" />
+      <div className="flex items-center gap-2 empty:hidden">
         <AnimatePresence mode="popLayout" initial={false}>
           {badge && (
             <motion.span key={cmp} initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0, transition: { duration: 0.12 } }} transition={spring}
@@ -83,6 +87,24 @@ function EntryCard({ entry, exercise, workouts, workoutId, index, onChange, onRe
   )
 }
 
+/** Botón del cronómetro en el pie del entrenamiento: muestra el tiempo en vivo si está corriendo. */
+function TimerChip({ onClick }: { onClick: () => void }) {
+  const t = useTimer()
+  const now = useClock(t.running, 250)
+  const e = elapsedOf(t, now)
+  const rem = t.duration - e
+  const active = t.running || e > 0
+  const over = t.mode === 'countdown' && rem <= 0 && active
+  const label = t.mode === 'countdown' ? (over ? `+${fmtClock(-rem)}` : fmtClock(rem + 999)) : fmtClock(e)
+  return (
+    <Press onClick={onClick} aria-label="Cronómetro"
+      className={`h-14 rounded-full flex items-center justify-center gap-1.5 font-extrabold tabular-nums shrink-0 transition-colors ${active ? 'px-4 min-w-[96px]' : 'w-14'} ${over ? 'bg-bad text-white' : active ? 'bg-accent/15 text-accent border border-accent/40' : 'bg-surface-2 border border-border text-text'}`}>
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2M10 2h4M12 2v3" /></svg>
+      {active && <span>{label}</span>}
+    </Press>
+  )
+}
+
 export default function WorkoutPage({ workout, onClose }: { workout: Workout; onClose: () => void }) {
   const exercises = useExercises()
   const workouts = useWorkouts()
@@ -90,6 +112,7 @@ export default function WorkoutPage({ workout, onClose }: { workout: Workout; on
   const [finishing, setFinishing] = useState(false)
   const [selected, setSelected] = useState<Set<MuscleId>>(new Set())
   const [note, setNote] = useState('')
+  const [timerOpen, setTimerOpen] = useState(false)
   const exMap = useMemo(() => new Map(exercises.map(e => [e.id, e])), [exercises])
 
   // Estado local como fuente de verdad para no perder teclas mientras la DB se actualiza.
@@ -167,8 +190,15 @@ export default function WorkoutPage({ workout, onClose }: { workout: Workout; on
       </div>
 
       <div className="safe-bottom bg-surface/95 backdrop-blur border-t border-border p-3">
-        <Press className="btn-primary w-full text-base h-14" disabled={validEntries.length === 0} onClick={openFinish}>Terminar entrenamiento</Press>
+        <div className="flex gap-2">
+          <TimerChip onClick={() => setTimerOpen(true)} />
+          <Press className="btn-primary flex-1 text-base h-14" disabled={validEntries.length === 0} onClick={openFinish}>Terminar entrenamiento</Press>
+        </div>
       </div>
+
+      <Sheet open={timerOpen} onClose={() => setTimerOpen(false)} title="Descanso" full>
+        <TimerView compact />
+      </Sheet>
 
       <ExercisePicker open={picker} onClose={() => setPicker(false)} exclude={entries.map(e => e.exerciseId)} onPick={ex => {
         const last = lastFor(ex.id, workouts, workout.id)

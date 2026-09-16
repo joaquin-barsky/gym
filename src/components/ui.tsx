@@ -49,22 +49,26 @@ export function Stepper({ value, onChange, step = 1, min = 0, label, suffix, big
   value: number; onChange: (v: number) => void; step?: number; min?: number; label: string; suffix?: string; big?: boolean
 }) {
   const round = (v: number) => Math.round(v * 100) / 100
-  const btn = 'w-10 shrink-0 text-xl text-muted active:bg-white/5 active:text-text transition-colors'
+  const text = Number.isNaN(value) ? '' : String(value)
+  // Achica la fuente solo si el número es largo (ej. 102.5), nunca lo corta.
+  const size = big ? (text.length >= 5 ? 'text-[19px]' : 'text-[24px]') : (text.length >= 4 ? 'text-base' : 'text-xl')
+  const btn = 'w-11 shrink-0 flex items-center justify-center text-[22px] leading-none text-muted active:bg-white/5 active:text-text transition-colors'
   return (
-    <div className="flex-1 min-w-0">
+    <div className="min-w-0">
       <div className="label mb-1.5">{label}{suffix ? ` ${suffix}` : ''}</div>
       <div className="flex items-stretch bg-surface-2 border border-border rounded-2xl overflow-hidden h-14">
-        <button className={btn} onClick={() => onChange(round(Math.max(min, (Number.isNaN(value) ? 0 : value) - step)))} aria-label="Menos">−</button>
+        <button className={btn} onClick={() => onChange(round(Math.max(min, (Number.isNaN(value) ? 0 : value) - step)))} aria-label={`Menos ${label}`}>−</button>
         <input
           type="number"
           inputMode="decimal"
           step={step}
-          className={`flex-1 min-w-0 bg-transparent text-center outline-none ${big ? 'text-[22px]' : 'text-lg'} font-extrabold tabular-nums`}
-          value={Number.isNaN(value) ? '' : value}
+          className={`flex-1 min-w-0 w-0 px-0 bg-transparent text-center outline-none ${size} font-extrabold tabular-nums tracking-tight`}
+          value={text}
           onChange={e => onChange(e.target.value === '' ? NaN : parseFloat(e.target.value))}
           onFocus={e => e.target.select()}
+          aria-label={label}
         />
-        <button className={btn} onClick={() => onChange(round((Number.isNaN(value) ? 0 : value) + step))} aria-label="Más">+</button>
+        <button className={btn} onClick={() => onChange(round((Number.isNaN(value) ? 0 : value) + step))} aria-label={`Más ${label}`}>+</button>
       </div>
     </div>
   )

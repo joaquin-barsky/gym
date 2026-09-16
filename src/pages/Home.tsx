@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { db, uid } from '../db'
-import { useActiveWorkout, useActivities, useDays, useExercises, useNow, useSetting, useSoreness, useWorkouts } from '../hooks'
-import { computeRecovery, recoveryColor } from '../lib/recovery'
+import { useActiveWorkout, useDays, useExercises, useNow, useSetting, useWorkouts } from '../hooks'
 import { fmtDateLong, fmtKg, lastFor, recentPRs, relTime, startOfWeek, totalVolume, volumePerWeek, weekDays } from '../lib/stats'
-import BodyMap from '../components/BodyMap'
+import RecoveryCard from '../components/RecoveryCard'
 import Ambient from '../components/Ambient'
 import SorenessCard, { usePendingSoreness } from '../components/SorenessCard'
 import { Sheet, confirmDlg } from '../components/ui'
@@ -53,12 +52,10 @@ function VolumeBars({ data }: { data: { week: number; volume: number }[] }) {
   )
 }
 
-export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => void; goBody: () => void }) {
+export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
   const days = useDays()
   const workouts = useWorkouts()
   const exercises = useExercises()
-  const soreness = useSoreness()
-  const activities = useActivities()
   const active = useActiveWorkout()
   const pending = usePendingSoreness()
   const now = useNow()
@@ -66,9 +63,6 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
   const [detail, setDetail] = useState<Workout | null>(null)
   const [picked, setPicked] = useState<string[]>([])
 
-  const recovery = computeRecovery(workouts, soreness, activities, now)
-  const colors = Object.fromEntries(Object.values(recovery).map(s => [s.muscle, recoveryColor(s.fraction)]))
-  const fraction = Object.fromEntries(Object.values(recovery).map(s => [s.muscle, s.fraction]))
 
   const start = async (selected: RoutineDay[]) => {
     if (active) { onOpenWorkout(); return }
@@ -93,7 +87,6 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
   const weekVolume = thisWeek.reduce((a, w) => a + totalVolume(w), 0)
   const streak = weekStreak(finished.map(w => w.finishedAt!), now)
   const exName = (id: string) => exercises.find(e => e.id === id)?.name ?? '—'
-  const fatigued = Object.values(recovery).filter(s => s.fraction < 1).sort((a, b) => a.fraction - b.fraction)
   const dateLabel = new Date(now).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
   const week = weekDays(workouts, now)
   const vol8 = volumePerWeek(workouts, 8)
@@ -218,24 +211,7 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
           </div>
         </Item>
 
-        <Item className="px-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-[17px] font-extrabold">Estado muscular</div>
-            <button className="text-accent text-sm font-bold flex items-center gap-0.5 h-8 -mr-1 px-1" onClick={goBody}>Ver detalle <IconChevron size={16} /></button>
-          </div>
-          <Press className="card p-4 w-full text-left" onClick={goBody}>
-            <BodyMap colors={colors} fraction={fraction} className="h-64" />
-            {fatigued.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5 mt-3 justify-center">
-                {fatigued.slice(0, 6).map(s => (
-                  <span key={s.muscle} className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: recoveryColor(s.fraction) + '26', color: recoveryColor(s.fraction) }}>
-                    {MUSCLE_LABEL[s.muscle]}
-                  </span>
-                ))}
-              </div>
-            ) : <div className="text-center text-muted text-sm font-semibold mt-2">Todo recuperado</div>}
-          </Press>
-        </Item>
+        <Item className="px-5"><RecoveryCard /></Item>
 
         <Item className="px-5">
           <div className="text-[17px] font-extrabold mb-3">Últimos entrenamientos</div>
