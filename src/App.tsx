@@ -44,7 +44,7 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <AnimatePresence>{splash && <Splash key="splash" onDone={() => setSplash(false)} />}</AnimatePresence>
+      {splash && <Splash onDone={() => setSplash(false)} />}
       {!ready ? <div className="h-full bg-bg" /> : (
       <AnimatePresence mode="wait" initial={false}>
         {workoutOpen && active ? (

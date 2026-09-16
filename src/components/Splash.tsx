@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 
 const LETTERS = ['G', 'Y', 'M']
@@ -6,21 +6,25 @@ const LETTERS = ['G', 'Y', 'M']
 /** Intro cinematográfica al abrir la app. */
 export default function Splash({ onDone }: { onDone: () => void }) {
   const reduced = useReducedMotion()
+  const [done, setDone] = useState(false)
+  // Se cierra por tiempo, no por animación: si la pestaña no dibuja, igual desaparece y no bloquea toques.
   useEffect(() => {
-    const t = setTimeout(onDone, reduced ? 500 : 1900)
-    return () => clearTimeout(t)
+    const t1 = setTimeout(() => setDone(true), reduced ? 400 : 1900)
+    const t2 = setTimeout(onDone, reduced ? 800 : 2400)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [onDone, reduced])
 
   if (reduced) {
     return (
-      <motion.div className="fixed inset-0 z-[60] bg-bg flex items-center justify-center" initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.3 } }}>
+      <motion.div className={`fixed inset-0 z-[60] bg-bg flex items-center justify-center ${done ? 'pointer-events-none' : ''}`} initial={{ opacity: 1 }} animate={{ opacity: done ? 0 : 1 }} transition={{ duration: 0.3 }}>
         <Mark />
       </motion.div>
     )
   }
 
   return (
-    <motion.div className="fixed inset-0 z-[60] bg-bg overflow-hidden flex flex-col items-center justify-center" exit={{ opacity: 0, scale: 1.06, filter: 'blur(6px)', transition: { duration: 0.45, ease: [0.4, 0, 0.2, 1] } }}>
+    <motion.div className={`fixed inset-0 z-[60] bg-bg overflow-hidden flex flex-col items-center justify-center ${done ? 'pointer-events-none' : ''}`}
+      animate={done ? { opacity: 0, scale: 1.06 } : { opacity: 1, scale: 1 }} transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}>
       {/* onda de energía */}
       <motion.div className="absolute rounded-full border-2 border-accent" style={{ width: 160, height: 160 }}
         initial={{ scale: 0.2, opacity: 0.9 }} animate={{ scale: 9, opacity: 0 }} transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1], delay: 0.15 }} />
