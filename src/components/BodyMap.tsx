@@ -76,14 +76,14 @@ function Figure({ shapes, colors, selected, onPick, label }: {
   const entries = Object.entries(shapes) as [MuscleId, Shape[]][]
 
   const muscle = (m: MuscleId, d: string, key: string) => {
-    const color = colors[m] ?? '#2f3a49'
+    const color = colors[m] ?? '#2e2f36'
     const isSel = selected?.has(m)
     const faded = selected && !isSel
     return (
       <g key={key} onClick={onPick ? () => onPick(m) : undefined} style={{ cursor: onPick ? 'pointer' : 'default' }}>
         <path d={d} fill={color} style={{ transition: 'fill .4s' }} opacity={faded ? 0.35 : 1} />
         <path d={d} fill={`url(#${id}-gloss)`} opacity={faded ? 0.2 : 0.55} />
-        <path d={d} fill="none" stroke={isSel ? '#ffffff' : '#0a0d12'} strokeWidth={isSel ? 1.6 : 0.9} strokeOpacity={isSel ? 1 : 0.55} strokeLinejoin="round" />
+        <path d={d} fill="none" stroke={isSel ? '#ffffff' : '#0b0b0c'} strokeWidth={isSel ? 1.6 : 0.9} strokeOpacity={isSel ? 1 : 0.55} strokeLinejoin="round" />
       </g>
     )
   }
@@ -92,8 +92,8 @@ function Figure({ shapes, colors, selected, onPick, label }: {
     <svg viewBox="0 0 200 420" className="w-full h-full">
       <defs>
         <linearGradient id={`${id}-body`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#2a3442" />
-          <stop offset="1" stopColor="#1b2230" />
+          <stop offset="0" stopColor="#202127" />
+          <stop offset="1" stopColor="#161619" />
         </linearGradient>
         <linearGradient id={`${id}-gloss`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#ffffff" stopOpacity="0.28" />
@@ -101,8 +101,8 @@ function Figure({ shapes, colors, selected, onPick, label }: {
           <stop offset="1" stopColor="#000000" stopOpacity="0.28" />
         </linearGradient>
         <radialGradient id={`${id}-shadow`} cx="0.5" cy="0.9" r="0.6">
-          <stop offset="0" stopColor="#4f8cff" stopOpacity="0.16" />
-          <stop offset="1" stopColor="#4f8cff" stopOpacity="0" />
+          <stop offset="0" stopColor="var(--color-accent)" stopOpacity="0.14" />
+          <stop offset="1" stopColor="var(--color-accent)" stopOpacity="0" />
         </radialGradient>
       </defs>
       <ellipse cx="100" cy="392" rx="70" ry="22" fill={`url(#${id}-shadow)`} />
@@ -119,7 +119,7 @@ function Figure({ shapes, colors, selected, onPick, label }: {
       <g transform="translate(200,0) scale(-1,1)">
         {entries.flatMap(([m, list]) => list.map((d, i) => muscle(m, d, `${m}-${i}-r`)))}
       </g>
-      <text x="100" y="418" textAnchor="middle" fontSize="9" fill="#6b7686" fontWeight="700" letterSpacing="2">{label}</text>
+      <text x="100" y="418" textAnchor="middle" fontSize="9" fill="#6b6b74" fontWeight="700" letterSpacing="2">{label}</text>
     </svg>
   )
 }

@@ -63,11 +63,11 @@ export function computeRecovery(
   return result
 }
 
-/** Rojo (0) -> ambar (0.5) -> verde (1), en tonos que combinan con la UI oscura. */
+/** Rojo (0) -> ambar (0.5) -> gris neutro (1): solo resalta lo fatigado. */
 const STOPS: [number, [number, number, number]][] = [
   [0, [255, 77, 94]],
   [0.5, [245, 185, 66]],
-  [1, [46, 160, 104]],
+  [1, [46, 47, 54]],
 ]
 export function recoveryColor(fraction: number): string {
   const f = Math.min(1, Math.max(0, fraction))

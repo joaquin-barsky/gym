@@ -22,7 +22,7 @@ export function Sheet({ open, onClose, title, children, full }: { open: boolean;
             onClick={onClose}
           />
           <motion.div
-            className={`relative bg-surface border-t border-white/8 rounded-t-[28px] flex flex-col shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.8)] ${full ? 'h-[92dvh]' : 'max-h-[88dvh]'}`}
+            className={`relative bg-surface border-t border-white/8 rounded-t-[32px] flex flex-col shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.8)] ${full ? 'h-[92dvh]' : 'max-h-[88dvh]'}`}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } }}
             transition={softSpring}
             drag="y" dragControls={drag} dragListener={false}
@@ -88,7 +88,7 @@ export function Chip({ active, onClick, children, color }: { active?: boolean; o
       whileTap={{ scale: 0.94 }}
       onClick={onClick}
       style={active && color ? { background: color, borderColor: color, color: '#0b0f14' } : undefined}
-      className={`px-4 h-10 rounded-full text-sm font-bold border transition-colors ${active ? 'bg-accent border-accent text-white' : 'bg-surface-2 border-border text-muted'}`}
+      className={`px-4 h-10 rounded-full text-sm font-bold border transition-colors ${active ? 'bg-accent border-accent text-on-accent' : 'bg-surface-2 border-border text-muted'}`}
     >
       {children}
     </motion.button>
@@ -98,12 +98,12 @@ export function Chip({ active, onClick, children, color }: { active?: boolean; o
 /** Control segmentado con indicador que se desliza. */
 export function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[] }) {
   return (
-    <div className="inline-flex bg-surface-2 border border-border rounded-2xl p-1 gap-0.5 relative">
+    <div className="inline-flex bg-surface-2 border border-border rounded-full p-1 gap-0.5 relative">
       {options.map(o => {
         const on = o.value === value
         return (
-          <button key={o.value} onClick={() => onChange(o.value)} className={`relative px-4 h-9 rounded-xl text-sm font-bold transition-colors ${on ? 'text-text' : 'text-muted'}`}>
-            {on && <motion.span layoutId="seg-pill" className="absolute inset-0 rounded-xl bg-surface-3 shadow" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+          <button key={o.value} onClick={() => onChange(o.value)} className={`relative px-4 h-9 rounded-full text-sm font-bold transition-colors ${on ? 'text-on-accent' : 'text-muted'}`}>
+            {on && <motion.span layoutId="seg-pill" className="absolute inset-0 rounded-full bg-accent" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
             <span className="relative">{o.label}</span>
           </button>
         )

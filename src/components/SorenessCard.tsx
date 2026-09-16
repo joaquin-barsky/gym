@@ -6,7 +6,7 @@ import type { MuscleId, Workout } from '../types'
 import { fmtDateLong } from '../lib/stats'
 
 const LEVELS: { v: 0 | 1 | 2 | 3; label: string; color: string }[] = [
-  { v: 0, label: 'Nada', color: '#2fd27a' },
+  { v: 0, label: 'Nada', color: '#3ddc97' },
   { v: 1, label: 'Poco', color: '#b8e04a' },
   { v: 2, label: 'Bastante', color: '#ffc233' },
   { v: 3, label: 'Mucho', color: '#ff4d5e' },
@@ -48,7 +48,7 @@ export default function SorenessCard({ workout }: { workout: Workout }) {
                 const on = (levels[m] ?? 0) === l.v
                 return (
                   <button key={l.v} onClick={() => setLevels({ ...levels, [m]: l.v })}
-                    style={on ? { background: l.color, color: '#0b0f14', borderColor: l.color } : undefined}
+                    style={on ? { background: l.color, color: '#0b0b0c', borderColor: l.color } : undefined}
                     className="text-[11px] font-bold px-2 py-1.5 rounded-lg border border-border bg-surface-2 text-muted">
                     {l.label}
                   </button>

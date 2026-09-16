@@ -10,8 +10,8 @@ import { MUSCLE_GROUPS } from '../muscles'
 import type { BodyWeight, MuscleId } from '../types'
 
 const tooltipStyle = {
-  contentStyle: { background: '#1c2430', border: '1px solid #263040', borderRadius: 12, fontSize: 12 },
-  labelStyle: { color: '#8a96a6' },
+  contentStyle: { background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 14, fontSize: 12 },
+  labelStyle: { color: 'var(--color-muted)' },
 }
 
 function Tile({ label, value, sub }: { label: string; value: string; sub?: string }) {
@@ -25,7 +25,7 @@ function Tile({ label, value, sub }: { label: string; value: string; sub?: strin
 }
 
 function Chart({ title, data, dataKey, color, unit = '', bar }: { title: string; data: Record<string, unknown>[]; dataKey: string; color: string; unit?: string; bar?: boolean }) {
-  const axis = { tick: { fill: '#8a96a6', fontSize: 10 }, axisLine: false, tickLine: false }
+  const axis = { tick: { fill: 'var(--color-muted)', fontSize: 10 }, axisLine: false, tickLine: false }
   return (
     <div className="card p-3">
       <div className="label mb-2">{title}</div>
@@ -33,7 +33,7 @@ function Chart({ title, data, dataKey, color, unit = '', bar }: { title: string;
         <ResponsiveContainer width="100%" height="100%">
           {bar ? (
             <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-              <CartesianGrid stroke="#263040" vertical={false} />
+              <CartesianGrid stroke="var(--color-border)" vertical={false} />
               <XAxis dataKey="label" {...axis} />
               <YAxis {...axis} allowDecimals={false} />
               <Tooltip {...tooltipStyle} formatter={(v) => [`${v}${unit}`, title]} />
@@ -41,7 +41,7 @@ function Chart({ title, data, dataKey, color, unit = '', bar }: { title: string;
             </BarChart>
           ) : (
             <LineChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-              <CartesianGrid stroke="#263040" vertical={false} />
+              <CartesianGrid stroke="var(--color-border)" vertical={false} />
               <XAxis dataKey="label" {...axis} />
               <YAxis {...axis} domain={['auto', 'auto']} />
               <Tooltip {...tooltipStyle} formatter={(v) => [`${v}${unit}`, title]} />
@@ -108,10 +108,10 @@ export default function Progress() {
                 <Tile label="1RM estimado" value={best.e1rm ? `${fmtKg(Math.round(best.e1rm.e1rm * 2) / 2)} kg` : '—'} sub="fórmula de Epley" />
                 <Tile label="Sesiones" value={String(history.length)} sub={deltaText} />
               </div>
-              <Chart title="Peso (kg)" data={data} dataKey="peso" color="#4f8cff" unit=" kg" />
-              <Chart title="Repeticiones" data={data} dataKey="reps" color="#7c5cff" />
-              <Chart title="1RM estimado (kg)" data={data} dataKey="rm" color="#2fd27a" unit=" kg" />
-              <Chart title="Volumen por sesión (kg)" data={data} dataKey="vol" color="#ffc233" unit=" kg" bar />
+              <Chart title="Peso (kg)" data={data} dataKey="peso" color="var(--color-accent)" unit=" kg" />
+              <Chart title="Repeticiones" data={data} dataKey="reps" color="#b18cff" />
+              <Chart title="1RM estimado (kg)" data={data} dataKey="rm" color="#3ddc97" unit=" kg" />
+              <Chart title="Volumen por sesión (kg)" data={data} dataKey="vol" color="#ffc857" unit=" kg" bar />
               <div className="card divide-y divide-border">
                 <div className="label px-3 pt-3 pb-1">Historial</div>
                 {[...history].reverse().map(h => (
@@ -132,23 +132,23 @@ export default function Progress() {
             <Tile label="Entrenamientos" value={String(workouts.filter(w => w.finishedAt).length)} sub="en total" />
             <Tile label="Esta semana" value={String(perWeek[perWeek.length - 1]?.n ?? 0)} sub={`${perWeek[perWeek.length - 2]?.n ?? 0} la semana pasada`} />
           </div>
-          <Chart title="Entrenamientos por semana" data={perWeek} dataKey="n" color="#4f8cff" bar />
+          <Chart title="Entrenamientos por semana" data={perWeek} dataKey="n" color="var(--color-accent)" bar />
           <div className="card p-3">
             <div className="label mb-2">Series por grupo muscular (esta semana vs pasada)</div>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={groupData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <CartesianGrid stroke="#263040" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: '#8a96a6', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#8a96a6', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <CartesianGrid stroke="var(--color-border)" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: 'var(--color-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--color-muted)', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip {...tooltipStyle} />
-                  <Bar dataKey="pasada" name="Semana pasada" fill="#3a4656" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="esta" name="Esta semana" fill="#4f8cff" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="pasada" name="Semana pasada" fill="var(--color-surface-3)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="esta" name="Esta semana" fill="var(--color-accent)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
-          {bwData.length > 0 ? <Chart title="Peso corporal (kg)" data={bwData} dataKey="kg" color="#ff4d5e" unit=" kg" /> : (
+          {bwData.length > 0 ? <Chart title="Peso corporal (kg)" data={bwData} dataKey="kg" color="#ff5c8a" unit=" kg" /> : (
             <div className="text-muted text-xs text-center">Podés registrar tu peso corporal desde Ajustes.</div>
           )}
         </Item>
