@@ -127,3 +127,50 @@ export function relTime(t: number, now = Date.now()): string {
 export function fmtKg(n: number): string {
   return Number.isInteger(n) ? `${n}` : n.toFixed(1).replace(/\.0$/, '')
 }
+
+export function volumePerWeek(workouts: Workout[], n = 8): { week: number; volume: number }[] {
+  const weeks = weeksBack(n)
+  const sums = new Map(weeks.map(w => [w, 0]))
+  for (const w of finishedSorted(workouts)) {
+    const k = startOfWeek(w.finishedAt!)
+    if (sums.has(k)) sums.set(k, sums.get(k)! + totalVolume(w))
+  }
+  return weeks.map(week => ({ week, volume: sums.get(week)! }))
+}
+
+export interface PR { exerciseId: string; weight: number; reps: number; date: number; workoutId: string }
+
+/** Récords: entradas que superaron la mejor marca anterior de ese ejercicio (no cuenta la primera vez). */
+export function recentPRs(workouts: Workout[], n = 3): PR[] {
+  const byEx = new Map<string, { weight: number; reps: number; date: number; workoutId: string }[]>()
+  for (const w of finishedSorted(workouts)) {
+    for (const e of w.entries) {
+      if (!(e.weight > 0) || !(e.reps > 0)) continue
+      const list = byEx.get(e.exerciseId) ?? []
+      list.push({ weight: e.weight, reps: e.reps, date: w.finishedAt!, workoutId: w.id })
+      byEx.set(e.exerciseId, list)
+    }
+  }
+  const prs: PR[] = []
+  for (const [exerciseId, pts] of byEx) {
+    let bestW = -1, bestR = -1
+    for (const p of pts) {
+      if (p.weight > bestW || (p.weight === bestW && p.reps > bestR)) {
+        if (bestW >= 0) prs.push({ exerciseId, ...p })
+        bestW = p.weight; bestR = p.reps
+      }
+    }
+  }
+  return prs.sort((a, b) => b.date - a.date).slice(0, n)
+}
+
+/** Días de la semana actual (lunes a domingo) con si hubo entrenamiento. */
+export function weekDays(workouts: Workout[], now = Date.now()): { date: number; trained: boolean; today: boolean; future: boolean }[] {
+  const start = startOfWeek(now)
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0)
+  const trainedDays = new Set(workouts.filter(w => w.finishedAt).map(w => { const d = new Date(w.finishedAt!); d.setHours(0, 0, 0, 0); return d.getTime() }))
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = start + i * 86_400_000
+    return { date, trained: trainedDays.has(date), today: date === todayStart.getTime(), future: date > todayStart.getTime() }
+  })
+}

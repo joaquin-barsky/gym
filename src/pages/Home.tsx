@@ -3,24 +3,25 @@ import { AnimatePresence, motion } from 'motion/react'
 import { db, uid } from '../db'
 import { useActiveWorkout, useActivities, useDays, useExercises, useNow, useSoreness, useWorkouts } from '../hooks'
 import { computeRecovery, recoveryColor } from '../lib/recovery'
-import { fmtDateLong, fmtKg, lastFor, relTime, startOfWeek, totalVolume } from '../lib/stats'
-import { randomPhrase } from '../data/phrases'
+import { fmtDateLong, fmtKg, lastFor, recentPRs, relTime, startOfWeek, totalVolume, volumePerWeek, weekDays } from '../lib/stats'
 import BodyMap from '../components/BodyMap'
+import Ambient from '../components/Ambient'
 import SorenessCard, { usePendingSoreness } from '../components/SorenessCard'
-import FootballSheet from '../components/FootballSheet'
 import { Sheet, confirmDlg } from '../components/ui'
-import { Item, Press, Stagger, itemVariants } from '../components/motion'
-import { IconBall, IconCheck, IconChevron, IconDumbbell, IconFlame } from '../components/icons'
+import { Item, Press, Ring, Stagger, itemVariants, spring } from '../components/motion'
+import { IconCheck, IconChevron, IconDumbbell, IconFlame, IconTrophy } from '../components/icons'
 import { V2_REFERENCE } from '../data/routineV2'
-import { spring } from '../components/motion'
 import { MUSCLE_LABEL } from '../muscles'
 import type { RoutineDay, SetEntry, Workout } from '../types'
+
+const WEEK_GOAL = 4
+const DAY_LETTERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
 function weekStreak(finishedAt: number[], now: number): number {
   const weeks = new Set(finishedAt.map(t => startOfWeek(t)))
   let streak = 0
   let w = startOfWeek(now)
-  if (!weeks.has(w)) w -= 7 * 86_400_000 // la semana actual todavía puede sumarse
+  if (!weeks.has(w)) w -= 7 * 86_400_000
   while (weeks.has(w)) { streak++; w -= 7 * 86_400_000 }
   return streak
 }
@@ -35,6 +36,24 @@ function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; la
   )
 }
 
+function VolumeBars({ data }: { data: { week: number; volume: number }[] }) {
+  const max = Math.max(1, ...data.map(d => d.volume))
+  return (
+    <div className="flex items-end gap-1.5 h-20">
+      {data.map((d, i) => {
+        const h = Math.max(0.06, d.volume / max)
+        const last = i === data.length - 1
+        return (
+          <div key={d.week} className="flex-1 h-full flex items-end">
+            <motion.div className={`w-full rounded-md ${last ? 'bg-accent' : 'bg-surface-3'}`} style={{ originY: 1, height: `${h * 100}%` }}
+              initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ ...spring, delay: 0.1 + i * 0.05 }} />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => void; goBody: () => void }) {
   const days = useDays()
   const workouts = useWorkouts()
@@ -44,8 +63,6 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
   const active = useActiveWorkout()
   const pending = usePendingSoreness()
   const now = useNow()
-  const [phrase] = useState(randomPhrase)
-  const [football, setFootball] = useState(false)
   const [detail, setDetail] = useState<Workout | null>(null)
   const [picked, setPicked] = useState<string[]>([])
 
@@ -70,7 +87,7 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
   const pickedDays = days.filter(d => picked.includes(d.id))
 
   const finished = workouts.filter(w => w.finishedAt)
-  const recent = [...finished].sort((a, b) => b.finishedAt! - a.finishedAt!).slice(0, 6)
+  const recent = [...finished].sort((a, b) => b.finishedAt! - a.finishedAt!).slice(0, 5)
   const weekStart = startOfWeek(now)
   const thisWeek = finished.filter(w => w.finishedAt! >= weekStart)
   const weekVolume = thisWeek.reduce((a, w) => a + totalVolume(w), 0)
@@ -78,34 +95,55 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
   const exName = (id: string) => exercises.find(e => e.id === id)?.name ?? '—'
   const fatigued = Object.values(recovery).filter(s => s.fraction < 1).sort((a, b) => a.fraction - b.fraction)
   const dateLabel = new Date(now).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
-
+  const week = weekDays(workouts, now)
+  const vol8 = volumePerWeek(workouts, 8)
+  const prs = recentPRs(workouts, 3)
+  const prevWeekVol = vol8[vol8.length - 2]?.volume ?? 0
+  const volDelta = prevWeekVol > 0 ? Math.round(((weekVolume - prevWeekVol) / prevWeekVol) * 100) : null
 
   return (
-    <div className="glow">
-      <Stagger className="space-y-6">
-        <Item className="px-5 pt-5">
-          <div className="label">{dateLabel}</div>
-          <h1 className="text-[28px] leading-[1.15] font-extrabold tracking-tight mt-1.5 pr-4">{phrase}</h1>
+    <div className="relative">
+      <Ambient />
+      <Stagger className="relative space-y-6">
+        <Item className="px-5 pt-5 flex items-end justify-between">
+          <div>
+            <div className="label">{dateLabel}</div>
+            <h1 className="text-[34px] leading-none font-extrabold tracking-tight mt-1.5">Hoy</h1>
+          </div>
+          <Ring value={thisWeek.length / WEEK_GOAL} size={64} stroke={6}>
+            <div className="text-center leading-none">
+              <div className="text-xl font-extrabold tabular-nums">{thisWeek.length}</div>
+              <div className="text-[9px] text-muted font-bold">de {WEEK_GOAL}</div>
+            </div>
+          </Ring>
+        </Item>
+
+        <Item className="px-5">
+          <div className="card px-4 py-3.5 flex justify-between">
+            {week.map((d, i) => (
+              <div key={d.date} className="flex flex-col items-center gap-1.5">
+                <div className={`text-[11px] font-bold ${d.today ? 'text-text' : 'text-muted'}`}>{DAY_LETTERS[i]}</div>
+                <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring, delay: 0.15 + i * 0.04 }}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${d.trained ? 'bg-accent border-accent text-on-accent' : d.today ? 'border-accent text-accent' : d.future ? 'border-border text-border' : 'border-surface-3 text-muted'}`}>
+                  {d.trained ? <IconCheck size={15} /> : <span className="text-[11px] font-bold tabular-nums">{new Date(d.date).getDate()}</span>}
+                </motion.div>
+              </div>
+            ))}
+          </div>
         </Item>
 
         {pending && <Item><SorenessCard workout={pending} /></Item>}
 
-        <Item className="px-5 flex gap-2.5">
-          <Stat icon={<IconDumbbell size={18} />} value={String(thisWeek.length)} label="esta semana" />
-          <Stat icon={<IconFlame size={18} />} value={`${streak} sem`} label="racha" />
-          <Stat icon={<IconChevron size={18} className="-rotate-90" />} value={`${fmtKg(Math.round(weekVolume))} kg`} label="volumen sem." />
-        </Item>
-
         <Item className="px-5">
-          <div className="bg-accent text-on-accent rounded-[28px] p-5">
+          <div className="bg-accent text-on-accent rounded-[28px] p-5 shadow-[0_24px_60px_-24px_var(--color-accent)]">
             <div className="flex items-start justify-between">
               <div>
                 <div className="text-[11px] uppercase tracking-[0.14em] font-bold opacity-70">Entrenar</div>
                 <div className="text-[24px] font-extrabold leading-tight mt-1">¿Qué toca hoy?</div>
+                <div className="text-sm opacity-70 mt-1">Elegí uno o varios músculos.</div>
               </div>
-              <div className="w-11 h-11 rounded-full bg-on-accent/15 flex items-center justify-center"><IconDumbbell size={22} /></div>
+              <div className="w-11 h-11 rounded-full bg-on-accent/15 flex items-center justify-center shrink-0"><IconDumbbell size={22} /></div>
             </div>
-            <div className="text-sm opacity-70 mt-1">Elegí uno o varios músculos.</div>
             <div className="flex flex-wrap gap-2 mt-4">
               {days.map(d => {
                 const on = picked.includes(d.id)
@@ -116,7 +154,6 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
                   </Press>
                 )
               })}
-              <Press onClick={() => setFootball(true)} className="h-11 px-4 rounded-full font-bold text-[15px] flex items-center gap-2 border-2 border-on-accent/30 text-on-accent"><IconBall size={18} /> Fútbol</Press>
             </div>
             <div className="mt-4 flex gap-2">
               <AnimatePresence mode="popLayout" initial={false}>
@@ -135,6 +172,49 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
                 )}
               </AnimatePresence>
             </div>
+          </div>
+        </Item>
+
+        <Item className="px-5 flex gap-2.5">
+          <Stat icon={<IconDumbbell size={18} />} value={String(thisWeek.length)} label="esta semana" />
+          <Stat icon={<IconFlame size={18} />} value={`${streak} sem`} label="racha" />
+          <Stat icon={<IconTrophy size={18} />} value={String(prs.length)} label="récords" />
+        </Item>
+
+        <Item className="px-5">
+          <div className="card p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="label">Volumen · 8 semanas</div>
+                <div className="text-[22px] font-extrabold leading-tight mt-1 tabular-nums">{fmtKg(Math.round(weekVolume))} <span className="text-sm text-muted font-bold">kg esta semana</span></div>
+              </div>
+              {volDelta !== null && (
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${volDelta >= 0 ? 'bg-good/15 text-good' : 'bg-bad/15 text-bad'}`}>{volDelta >= 0 ? '+' : ''}{volDelta}%</span>
+              )}
+            </div>
+            <VolumeBars data={vol8} />
+          </div>
+        </Item>
+
+        <Item className="px-5">
+          <div className="card p-4">
+            <div className="text-[17px] font-extrabold flex items-center gap-2 mb-3"><IconTrophy size={18} className="text-accent" /> Récords recientes</div>
+            {prs.length === 0 ? (
+              <div className="text-muted text-sm leading-relaxed">Todavía no hay récords. Cuando superes tu mejor marca en un ejercicio, aparece acá.</div>
+            ) : (
+              <div className="space-y-2.5">
+                {prs.map(p => (
+                  <div key={p.workoutId + p.exerciseId} className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0"><IconTrophy size={16} /></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold truncate">{exName(p.exerciseId)}</div>
+                      <div className="text-xs text-muted">{relTime(p.date, now)}</div>
+                    </div>
+                    <div className="font-extrabold tabular-nums">{fmtKg(p.weight)} kg × {p.reps}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Item>
 
@@ -159,12 +239,12 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
 
         <Item className="px-5">
           <div className="text-[17px] font-extrabold mb-3">Últimos entrenamientos</div>
-          {recent.length === 0 && <div className="card p-6 text-muted text-sm text-center leading-relaxed">Todavía no hay entrenamientos.<br />Elegí un día arriba y arrancá.</div>}
+          {recent.length === 0 && <div className="card p-6 text-muted text-sm text-center leading-relaxed">Todavía no hay entrenamientos.<br />Elegí un músculo arriba y arrancá.</div>}
           <div className="space-y-2">
             {recent.map(w => (
               <motion.div key={w.id} variants={itemVariants}>
                 <Press onClick={() => setDetail(w)} className="card w-full p-3 pl-3.5 text-left flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center text-xl shrink-0">{/\p{Emoji}/u.test(w.name.split(' ')[0]) ? w.name.split(' ')[0] : <IconDumbbell size={20} className="text-muted" />}</div>
+                  <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center shrink-0"><IconDumbbell size={20} className="text-muted" /></div>
                   <div className="flex-1 min-w-0">
                     <div className="font-extrabold truncate">{w.name.replace(/^\p{Emoji}\S*\s*/u, '')}</div>
                     <div className="text-muted text-xs">{relTime(w.finishedAt!, now)} · {w.entries.length} ejercicios · {fmtKg(totalVolume(w))} kg</div>
@@ -176,8 +256,6 @@ export default function Home({ onOpenWorkout, goBody }: { onOpenWorkout: () => v
           </div>
         </Item>
       </Stagger>
-
-      <FootballSheet open={football} onClose={() => setFootball(false)} />
 
       <Sheet open={!!detail} onClose={() => setDetail(null)} title={detail?.name}>
         {detail && (
