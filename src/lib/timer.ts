@@ -22,14 +22,19 @@ export interface TimerState {
 
 const KEY = 'gym_timer_v1'
 const DEFAULT: TimerState = {
-  mode: 'countdown', running: false, startedAt: null, accumulated: 0,
+  mode: 'stopwatch', running: false, startedAt: null, accumulated: 0,
   duration: 90_000, laps: [], alerted: false, sound: true, history: [],
 }
 
 function load(): TimerState {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return { ...DEFAULT, ...JSON.parse(raw) }
+    if (raw) {
+      const saved: TimerState = { ...DEFAULT, ...JSON.parse(raw) }
+      // Al abrir la app arranca en cronómetro, salvo que haya algo corriendo o pausado.
+      if (!saved.running && saved.accumulated === 0) saved.mode = 'stopwatch'
+      return saved
+    }
   } catch { /* sin storage: arranca de cero */ }
   return DEFAULT
 }

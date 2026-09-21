@@ -24,7 +24,7 @@ export const IconBack = ({ size = 22, ...r }: P) => (
 export const IconX = ({ size = 18, ...r }: P) => (
   <svg {...base(size, r)}><path d="M6 6l12 12M18 6L6 18" /></svg>
 )
-export const IconGrip = ({ size = 18, ...r }: P) => (
+export const IconDots = ({ size = 18, ...r }: P) => (
   <svg {...base(size, r)}><circle cx="9" cy="6" r="1.2" fill="currentColor" /><circle cx="15" cy="6" r="1.2" fill="currentColor" /><circle cx="9" cy="12" r="1.2" fill="currentColor" /><circle cx="15" cy="12" r="1.2" fill="currentColor" /><circle cx="9" cy="18" r="1.2" fill="currentColor" /><circle cx="15" cy="18" r="1.2" fill="currentColor" /></svg>
 )
 export const IconTrophy = ({ size = 16, ...r }: P) => (
@@ -36,4 +36,7 @@ export const IconCheck = ({ size = 18, ...r }: P) => <svg {...base(size, r)}><pa
 export const IconSearch = ({ size = 18, ...r }: P) => <svg {...base(size, r)}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
 export const IconFlame = ({ size = 22, ...r }: P) => (
   <svg {...base(size, r)}><path d="M12 3c1 3 4 5 4 9a4 4 0 0 1-8 0c0-1.5.5-2.5 1-3.5.5 1 1 1.5 2 1.5 0-3-1-5 1-7z" /></svg>
+)
+export const IconGrip = ({ size = 22, ...r }: P) => (
+  <svg {...base(size, r)}><path d="M8 3c-2 3-2 7 0 10l2 4" /><path d="M16 3c2 3 2 7 0 10l-2 4" /><path d="M10 17h4v3a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z" /><path d="M8 8h8" /></svg>
 )

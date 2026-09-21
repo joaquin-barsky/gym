@@ -92,7 +92,7 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
   const vol8 = volumePerWeek(workouts, 8)
   const prs = recentPRs(workouts, 3)
   const prevWeekVol = vol8[vol8.length - 2]?.volume ?? 0
-  const volDelta = prevWeekVol > 0 ? Math.round(((weekVolume - prevWeekVol) / prevWeekVol) * 100) : null
+  const volDelta = prevWeekVol > 0 && weekVolume > 0 ? Math.round(((weekVolume - prevWeekVol) / prevWeekVol) * 100) : null
 
   return (
     <div className="relative">

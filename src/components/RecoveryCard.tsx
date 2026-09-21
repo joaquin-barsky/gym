@@ -7,9 +7,9 @@ import { relTime } from '../lib/stats'
 import { MUSCLE_LABEL } from '../muscles'
 import type { MuscleId } from '../types'
 import BodyMap from './BodyMap'
-import FootballSheet from './FootballSheet'
+import ActivitySheet, { ActivityIcon, activityLevel, type ActivityKind } from './ActivitySheet'
 import { Press, spring } from './motion'
-import { IconBall, IconChevron, IconX } from './icons'
+import { IconBall, IconChevron, IconGrip, IconX } from './icons'
 
 /** Estado muscular en Inicio: muñequito, detalle por músculo, fútbol y actividades. */
 export default function RecoveryCard() {
@@ -19,7 +19,7 @@ export default function RecoveryCard() {
   const now = useNow()
   const [picked, setPicked] = useState<MuscleId | null>(null)
   const [open, setOpen] = useState(false)
-  const [football, setFootball] = useState(false)
+  const [sheet, setSheet] = useState<ActivityKind | null>(null)
 
   const recovery = computeRecovery(workouts, soreness, activities, now)
   const colors = Object.fromEntries(Object.values(recovery).map(s => [s.muscle, recoveryColor(s.fraction)]))
@@ -36,10 +36,13 @@ export default function RecoveryCard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[17px] font-extrabold">Estado muscular</div>
-        <Press onClick={() => setFootball(true)} className="h-9 px-3 rounded-full bg-good/15 text-good text-sm font-bold flex items-center gap-1.5">
-          <IconBall size={16} /> Fútbol
+      <div className="text-[17px] font-extrabold mb-3">Estado muscular</div>
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <Press onClick={() => setSheet('forearm')} className="h-11 rounded-full bg-warn/12 border border-warn/25 text-warn text-sm font-bold flex items-center justify-center gap-1.5">
+          <IconGrip size={17} /> Antebrazo
+        </Press>
+        <Press onClick={() => setSheet('football')} className="h-11 rounded-full bg-good/12 border border-good/25 text-good text-sm font-bold flex items-center justify-center gap-1.5">
+          <IconBall size={17} /> Fútbol
         </Press>
       </div>
 
@@ -108,7 +111,7 @@ export default function RecoveryCard() {
                   <div className="divide-y divide-border">
                     {recentActivities.map(a => (
                       <div key={a.id} className="h-12 flex items-center justify-between text-sm gap-3">
-                        <span className="flex items-center gap-2 font-bold"><IconBall size={16} className="text-good" />{a.name} <span className="text-muted font-medium">· {['', 'tranqui', 'normal', 'a morir'][a.intensity]}</span></span>
+                        <span className="flex items-center gap-2 font-bold"><ActivityIcon type={a.type} />{a.name} <span className="text-muted font-medium">· {activityLevel(a)}</span></span>
                         <span className="text-muted text-xs">{relTime(a.date, now)}</span>
                         <button className="text-muted w-9 h-9 -mr-2 flex items-center justify-center" onClick={() => db.activities.delete(a.id)} aria-label="Borrar actividad"><IconX size={16} /></button>
                       </div>
@@ -122,7 +125,7 @@ export default function RecoveryCard() {
         </AnimatePresence>
       </div>
 
-      <FootballSheet open={football} onClose={() => setFootball(false)} />
+      <ActivitySheet kind={sheet} onClose={() => setSheet(null)} />
     </div>
   )
 }

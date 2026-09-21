@@ -148,7 +148,7 @@ export default function TimerView({ compact }: { compact?: boolean }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <Segmented value={s.mode} onChange={timer.setMode} options={[{ value: 'countdown', label: 'Descanso' }, { value: 'stopwatch', label: 'Cronómetro' }]} />
+        <Segmented value={s.mode} onChange={timer.setMode} options={[{ value: 'stopwatch', label: 'Cronómetro' }, { value: 'countdown', label: 'Descanso' }]} />
         <Press onClick={timer.toggleSound} aria-pressed={s.sound} aria-label="Sonido"
           className={`w-11 h-11 rounded-full flex items-center justify-center border ${s.sound ? 'bg-accent/15 text-accent border-accent/30' : 'bg-surface-2 text-muted border-border'}`}>
           <IconSound on={s.sound} />

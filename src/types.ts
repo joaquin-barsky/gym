@@ -53,7 +53,7 @@ export interface Soreness {
 
 export interface Activity {
   id: string
-  type: 'football' | 'other'
+  type: 'football' | 'forearm' | 'other'
   name: string
   date: number
   muscles: MuscleId[]

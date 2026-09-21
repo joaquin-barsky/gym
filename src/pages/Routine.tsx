@@ -5,7 +5,7 @@ import { useDays, useExercises, useWorkouts } from '../hooks'
 import ExercisePicker, { ExerciseForm } from '../components/ExercisePicker'
 import { Header, Sheet, confirmDlg } from '../components/ui'
 import { Item, Press, Stagger } from '../components/motion'
-import { IconChevron, IconGrip, IconPlus, IconX } from '../components/icons'
+import { IconChevron, IconDots, IconPlus, IconX } from '../components/icons'
 import { MUSCLE_LABEL } from '../muscles'
 import type { Exercise, RoutineDay } from '../types'
 
@@ -15,7 +15,7 @@ function Row({ id, name, muscles, onRemove }: { id: string; name: string; muscle
   const controls = useDragControls()
   return (
     <Reorder.Item value={id} dragListener={false} dragControls={controls} className="card px-2 py-2 flex items-center gap-1 select-none">
-      <button className="w-10 h-10 flex items-center justify-center text-muted cursor-grab touch-none" onPointerDown={e => controls.start(e)} aria-label="Reordenar"><IconGrip /></button>
+      <button className="w-10 h-10 flex items-center justify-center text-muted cursor-grab touch-none" onPointerDown={e => controls.start(e)} aria-label="Reordenar"><IconDots /></button>
       <div className="flex-1 min-w-0">
         <div className="font-bold truncate">{name}</div>
         <div className="text-xs text-muted truncate">{muscles}</div>
