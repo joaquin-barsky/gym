@@ -1,44 +1,34 @@
 // Genera los íconos de la app a partir de un SVG (requiere sharp, dev dependency).
+// Marca: "g." geométrica blanca sobre negro, con el punto en lima. Mismo trazo que src/components/Logo.tsx.
 import sharp from 'sharp'
 import { writeFileSync } from 'node:fs'
 
-// Marca: disco lima con mancuerna en negativo, sobre negro con aura.
-const svg = (rounded) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <radialGradient id="aura" cx="0.5" cy="0.55" r="0.6">
-      <stop offset="0" stop-color="#c9f24d" stop-opacity="0.55"/>
-      <stop offset="0.55" stop-color="#c9f24d" stop-opacity="0.12"/>
-      <stop offset="1" stop-color="#c9f24d" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="disc" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#e2ff7a"/>
-      <stop offset="1" stop-color="#b6e239"/>
-    </linearGradient>
-    <linearGradient id="streak" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/>
-      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-  </defs>
+const RING = { cx: 44, cy: 44, r: 15 }
+const STEM = 'M59 29 V60 C59 70 52 76 43 76 C37.5 76 33.5 74.5 30.5 71.5'
+const DOT = { cx: 72.5, cy: 71.5, r: 6 }
+const W = 9.5
+
+// El glifo ocupa aprox. x 26..79, y 24..81 → lo centramos en el lienzo 100×100.
+const glyph = (scale) => `
+  <g transform="translate(50 50) scale(${scale}) translate(-52.5 -52.5)">
+    <circle cx="${RING.cx}" cy="${RING.cy}" r="${RING.r}" fill="none" stroke="#f5f5f6" stroke-width="${W}"/>
+    <path d="${STEM}" fill="none" stroke="#f5f5f6" stroke-width="${W}" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${DOT.cx}" cy="${DOT.cy}" r="${DOT.r}" fill="#c9f24d"/>
+  </g>`
+
+const svg = ({ rounded, scale }) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <rect width="100" height="100" rx="${rounded ? 22 : 0}" fill="#0b0b0c"/>
-  <rect width="100" height="100" rx="${rounded ? 22 : 0}" fill="url(#aura)"/>
-  <rect width="100" height="100" rx="${rounded ? 22 : 0}" fill="url(#streak)"/>
-  <circle cx="50" cy="50" r="40" fill="#c9f24d" opacity="0.12"/>
-  <circle cx="50" cy="50" r="33" fill="url(#disc)"/>
-  <g transform="rotate(-35 50 50)" fill="#0b0b0c">
-    <rect x="35" y="47.2" width="30" height="5.6" rx="2.8"/>
-    <rect x="28" y="39" width="8" height="22" rx="3.2"/><rect x="64" y="39" width="8" height="22" rx="3.2"/>
-    <rect x="21.5" y="43" width="5.5" height="14" rx="2.75"/><rect x="73" y="43" width="5.5" height="14" rx="2.75"/>
-  </g>
+  ${glyph(scale)}
 </svg>`
 
-writeFileSync('public/icon.svg', svg(true))
+writeFileSync('public/icon.svg', svg({ rounded: true, scale: 1.05 }))
 const jobs = [
-  ['public/icon-192.png', 192, true],
-  ['public/icon-512.png', 512, true],
-  ['public/icon-maskable-512.png', 512, false],
-  ['public/apple-touch-icon.png', 180, false],
+  ['public/icon-192.png', 192, { rounded: true, scale: 1.05 }],
+  ['public/icon-512.png', 512, { rounded: true, scale: 1.05 }],
+  ['public/icon-maskable-512.png', 512, { rounded: false, scale: 0.8 }],
+  ['public/apple-touch-icon.png', 180, { rounded: false, scale: 1.05 }],
 ]
-for (const [file, size, rounded] of jobs) {
-  await sharp(Buffer.from(svg(rounded)), { density: 400 }).resize(size, size).png().toFile(file)
+for (const [file, size, opts] of jobs) {
+  await sharp(Buffer.from(svg(opts)), { density: 400 }).resize(size, size).png().toFile(file)
   console.log('ok', file)
 }

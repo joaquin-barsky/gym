@@ -2,14 +2,15 @@ import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { db } from '../db'
 import { useExercises, useNow, useWorkouts } from '../hooks'
-import { bestFor, compareEntry, fmtKg, lastFor, relTime, type Compare } from '../lib/stats'
+import { bestFor, compareEntry, fmtKg, lastFor, relTime, totalVolume, type Compare } from '../lib/stats'
 import BodyMap from '../components/BodyMap'
 import ExercisePicker from '../components/ExercisePicker'
 import { Sheet, Stepper, Toggle, confirmDlg } from '../components/ui'
 import { Press, spring } from '../components/motion'
 import TimerView from '../components/TimerView'
-import { elapsedOf, fmtClock, useClock, useTimer } from '../lib/timer'
-import { IconBack, IconDown, IconPlus, IconTrophy, IconUp, IconX } from '../components/icons'
+import { elapsedOf, fmtClock, timer, useClock, useTimer } from '../lib/timer'
+import type { Summary } from '../components/WorkoutSummary'
+import { IconBack, IconCheck, IconDown, IconPlus, IconTrophy, IconUp, IconX } from '../components/icons'
 import { MUSCLE_LABEL } from '../muscles'
 import { V2_REFERENCE } from '../data/routineV2'
 import type { Exercise, MuscleId, SetEntry, Workout } from '../types'
@@ -22,10 +23,13 @@ const BADGE: Record<Compare, { text: string; cls: string; icon?: 'up' | 'down' |
   first: { text: 'Primera vez', cls: 'bg-accent/15 text-accent' },
 }
 
-function EntryCard({ entry, exercise, workouts, workoutId, index, onChange, onRemove }: {
+function EntryCard({ entry, exercise, workouts, workoutId, index, onChange, onRemove, onSetDone }: {
   entry: SetEntry; exercise?: Exercise; workouts: Workout[]; workoutId: string; index: number
-  onChange: (e: SetEntry) => void; onRemove: () => void
+  onChange: (e: SetEntry) => void; onRemove: () => void; onSetDone: () => void
 }) {
+  const sets = Math.max(1, Math.min(12, Number.isNaN(entry.sets) ? 1 : entry.sets || 1))
+  const done = Math.min(entry.done ?? 0, sets)
+  const complete = done >= sets
   const now = useNow()
   const last = useMemo(() => lastFor(entry.exerciseId, workouts, workoutId), [entry.exerciseId, workouts, workoutId])
   const best = useMemo(() => bestFor(entry.exerciseId, workouts, workoutId).weight, [entry.exerciseId, workouts, workoutId])
@@ -34,7 +38,7 @@ function EntryCard({ entry, exercise, workouts, workoutId, index, onChange, onRe
   const badge = cmp ? BADGE[cmp] : null
   const ring = cmp === 'down' ? 'border-bad/40' : cmp === 'pr' ? 'border-good/40' : ''
   return (
-    <div className={`card p-4 space-y-4 transition-colors duration-300 ${ring}`}>
+    <div className={`card p-4 space-y-4 transition-colors duration-300 ${complete ? 'border-accent/40' : ring}`}>
       <div className="flex items-start gap-3">
         <div className="w-8 h-8 rounded-xl bg-surface-3 text-muted text-sm font-extrabold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">{index + 1}</div>
         <div className="flex-1 min-w-0">
@@ -72,6 +76,22 @@ function EntryCard({ entry, exercise, workouts, workoutId, index, onChange, onRe
         </div>
       </div>
 
+      <div className="flex items-center gap-3">
+        <div className="flex-1 flex gap-1.5">
+          {Array.from({ length: sets }, (_, k) => (
+            <button key={k} className="flex-1 py-3 -my-3" aria-label={`Serie ${k + 1}`}
+              onClick={() => onChange({ ...entry, done: done === k + 1 ? k : k + 1 })}>
+              <motion.span className="block h-2 rounded-full" animate={{ backgroundColor: k < done ? 'var(--color-accent)' : 'var(--color-surface-3)', scaleY: k === done - 1 ? [1, 1.8, 1] : 1 }}
+                transition={{ duration: 0.35 }} />
+            </button>
+          ))}
+        </div>
+        <Press onClick={() => { if (!complete) { onChange({ ...entry, done: done + 1 }); onSetDone() } }} aria-label="Marcar serie hecha"
+          className={`h-11 px-4 rounded-full font-extrabold text-sm flex items-center gap-1.5 shrink-0 transition-colors ${complete ? 'bg-surface-2 text-accent border border-accent/30' : 'bg-accent text-on-accent'}`}>
+          <IconCheck size={16} />{complete ? 'Completo' : `Serie ${done + 1} hecha`}
+        </Press>
+      </div>
+
       <div className="flex items-center gap-2 empty:hidden">
         <AnimatePresence mode="popLayout" initial={false}>
           {badge && (
@@ -105,7 +125,7 @@ function TimerChip({ onClick }: { onClick: () => void }) {
   )
 }
 
-export default function WorkoutPage({ workout, onClose }: { workout: Workout; onClose: () => void }) {
+export default function WorkoutPage({ workout, onClose, onFinished }: { workout: Workout; onClose: () => void; onFinished: (s: Summary) => void }) {
   const exercises = useExercises()
   const workouts = useWorkouts()
   const [picker, setPicker] = useState(false)
@@ -138,14 +158,30 @@ export default function WorkoutPage({ workout, onClose }: { workout: Workout; on
       if (!e.toFailure) continue
       for (const m of exMap.get(e.exerciseId)?.muscles ?? []) if (selected.has(m)) failure.add(m)
     }
+    const cmps = validEntries.map(e => ({ e, c: compareEntry(e, lastFor(e.exerciseId, workouts, workout.id), bestFor(e.exerciseId, workouts, workout.id).weight) }))
+    const finishedAt = Date.now()
+    const saved = validEntries.map(e => ({ ...e, sets: e.sets || 1 }))
+    const prev = workouts
+      .filter(w => w.finishedAt && w.id !== workout.id && w.name === workout.name)
+      .sort((a, b) => b.finishedAt! - a.finishedAt!)[0]
+    const summary: Summary = {
+      name: workout.name,
+      durationMs: finishedAt - workout.startedAt,
+      volume: saved.reduce((a, e) => a + e.weight * e.reps * e.sets, 0),
+      prevVolume: prev ? totalVolume(prev) : undefined,
+      exercises: saved.length,
+      sets: saved.reduce((a, e) => a + e.sets, 0),
+      prs: cmps.filter(x => x.c === 'pr').map(x => ({ name: exMap.get(x.e.exerciseId)?.name ?? 'Ejercicio', weight: x.e.weight, reps: x.e.reps })),
+      ups: cmps.filter(x => x.c === 'up' || x.c === 'pr').length,
+    }
     await db.workouts.update(workout.id, {
-      finishedAt: Date.now(),
-      entries: validEntries.map(e => ({ ...e, sets: e.sets || 1 })),
+      finishedAt,
+      entries: saved,
       muscles: [...selected],
       failureMuscles: [...failure],
       note: note.trim() || undefined,
     })
-    onClose()
+    onFinished(summary)
   }
 
   const cancel = async () => {
@@ -178,7 +214,8 @@ export default function WorkoutPage({ workout, onClose }: { workout: Workout; on
               <motion.div key={e.exerciseId} layout initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }} transition={spring}>
                 <EntryCard entry={e} index={i} exercise={exMap.get(e.exerciseId)} workouts={workouts} workoutId={workout.id}
                   onChange={ne => update(prev => prev.map((x, j) => (j === i ? ne : x)))}
-                  onRemove={() => update(prev => prev.filter((_, j) => j !== i))} />
+                  onRemove={() => update(prev => prev.filter((_, j) => j !== i))}
+                  onSetDone={() => timer.restart()} />
               </motion.div>
             ))}
           </AnimatePresence>

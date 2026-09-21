@@ -29,6 +29,7 @@ export interface SetEntry {
   sets: number         // cantidad de series
   toFailure: boolean
   note?: string
+  done?: number       // series marcadas como hechas durante el entrenamiento (opcional)
 }
 
 export interface Workout {

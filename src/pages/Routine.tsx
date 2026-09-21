@@ -7,9 +7,8 @@ import { Header, Sheet, confirmDlg } from '../components/ui'
 import { Item, Press, Stagger } from '../components/motion'
 import { IconChevron, IconDots, IconPlus, IconX } from '../components/icons'
 import { MUSCLE_LABEL } from '../muscles'
+import MuscleGlyph, { dayMuscles } from '../components/MuscleGlyph'
 import type { Exercise, RoutineDay } from '../types'
-
-const EMOJIS = ['🔥', '🧲', '🦵', '💪', '🏋️', '⚡', '🎯', '🦍', '🫁', '🧠']
 
 function Row({ id, name, muscles, onRemove }: { id: string; name: string; muscles: string; onRemove: () => void }) {
   const controls = useDragControls()
@@ -32,12 +31,9 @@ function DayEditor({ day, onClose }: { day: RoutineDay; onClose: () => void }) {
   const set = (patch: Partial<RoutineDay>) => db.days.update(day.id, patch)
   return (
     <div className="space-y-5">
-      <div className="flex gap-2">
-        <div className="w-24">
-          <div className="label mb-1.5">Ícono</div>
-          <select className="input text-center text-xl h-[54px] py-0" value={day.emoji} onChange={e => set({ emoji: e.target.value })}>
-            {[...new Set([day.emoji, ...EMOJIS])].map(e => <option key={e} value={e}>{e}</option>)}
-          </select>
+      <div className="flex gap-3 items-end">
+        <div className="w-[54px] h-[54px] rounded-2xl bg-surface-3 flex items-center justify-center text-accent shrink-0">
+          <MuscleGlyph muscles={dayMuscles(day, exMap)} size={44} />
         </div>
         <div className="flex-1">
           <div className="label mb-1.5">Nombre</div>
@@ -115,6 +111,8 @@ function Library({ onClose }: { onClose: () => void }) {
 
 export default function Routine() {
   const days = useDays()
+  const exercises = useExercises()
+  const exMap = new Map(exercises.map(e => [e.id, e]))
   const [editId, setEditId] = useState<string | null>(null)
   const [lib, setLib] = useState(false)
   const day = days.find(d => d.id === editId)
@@ -132,7 +130,7 @@ export default function Routine() {
         {days.map(d => (
           <Item key={d.id}>
             <Press className="card w-full p-4 text-left flex items-center gap-3.5" onClick={() => setEditId(d.id)}>
-              <div className="w-12 h-12 rounded-2xl bg-surface-3 flex items-center justify-center text-2xl shrink-0">{d.emoji}</div>
+              <div className="w-12 h-12 rounded-2xl bg-surface-3 flex items-center justify-center shrink-0 text-accent"><MuscleGlyph muscles={dayMuscles(d, exMap)} size={40} /></div>
               <div className="flex-1 min-w-0">
                 <div className="font-extrabold text-[17px]">{d.name}</div>
                 <div className="text-muted text-xs">{d.exerciseIds.length} ejercicios</div>

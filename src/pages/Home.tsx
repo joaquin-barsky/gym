@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { db, uid } from '../db'
 import { useActiveWorkout, useDays, useExercises, useNow, useSetting, useWorkouts } from '../hooks'
@@ -7,7 +7,8 @@ import RecoveryCard from '../components/RecoveryCard'
 import Ambient from '../components/Ambient'
 import SorenessCard, { usePendingSoreness } from '../components/SorenessCard'
 import { Sheet, confirmDlg } from '../components/ui'
-import { Item, Press, Ring, Stagger, itemVariants, spring } from '../components/motion'
+import { CountUp, Item, Press, Ring, Stagger, itemVariants, spring } from '../components/motion'
+import MuscleGlyph, { dayMuscles } from '../components/MuscleGlyph'
 import { IconCheck, IconChevron, IconDumbbell, IconFlame, IconTrophy } from '../components/icons'
 import { V2_REFERENCE } from '../data/routineV2'
 import { MUSCLE_LABEL } from '../muscles'
@@ -24,7 +25,7 @@ function weekStreak(finishedAt: number[], now: number): number {
   return streak
 }
 
-function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+function Stat({ icon, value, label }: { icon: ReactNode; value: ReactNode; label: string }) {
   return (
     <div className="card flex-1 p-3.5 min-w-0">
       <div className="text-accent mb-2">{icon}</div>
@@ -52,7 +53,7 @@ function VolumeBars({ data }: { data: { week: number; volume: number }[] }) {
   )
 }
 
-export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
+export default function Home({ onOpenWorkout }: { onOpenWorkout: (from?: DOMRect) => void }) {
   const days = useDays()
   const workouts = useWorkouts()
   const exercises = useExercises()
@@ -62,9 +63,10 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
   const WEEK_GOAL = useSetting<number>('week_goal', 4)
   const [detail, setDetail] = useState<Workout | null>(null)
   const [picked, setPicked] = useState<string[]>([])
+  const exMap = useMemo(() => new Map(exercises.map(e => [e.id, e])), [exercises])
 
 
-  const start = async (selected: RoutineDay[]) => {
+  const start = async (selected: RoutineDay[], from?: DOMRect) => {
     if (active) { onOpenWorkout(); return }
     const ids = [...new Set(selected.flatMap(d => d.exerciseIds))]
     const entries: SetEntry[] = ids.map(exerciseId => {
@@ -75,7 +77,7 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
     const name = selected.length ? selected.map(d => d.name).join(' · ') : 'Libre'
     await db.workouts.add({ id: uid(), dayId: selected[0]?.id, name, startedAt: Date.now(), entries, muscles: [], failureMuscles: [] })
     setPicked([])
-    onOpenWorkout()
+    onOpenWorkout(from)
   }
   const toggle = (id: string) => setPicked(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]))
   const pickedDays = days.filter(d => picked.includes(d.id))
@@ -105,27 +107,11 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
           </div>
           <Ring value={thisWeek.length / WEEK_GOAL} size={64} stroke={6}>
             <div className="text-center leading-none">
-              <div className="text-xl font-extrabold tabular-nums">{thisWeek.length}</div>
+              <div className="text-xl font-extrabold"><CountUp value={thisWeek.length} /></div>
               <div className="text-[9px] text-muted font-bold">de {WEEK_GOAL}</div>
             </div>
           </Ring>
         </Item>
-
-        <Item className="px-5">
-          <div className="card px-4 py-3.5 flex justify-between">
-            {week.map((d, i) => (
-              <div key={d.date} className="flex flex-col items-center gap-1.5">
-                <div className={`text-[11px] font-bold ${d.today ? 'text-text' : 'text-muted'}`}>{DAY_LETTERS[i]}</div>
-                <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring, delay: 0.15 + i * 0.04 }}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${d.trained ? 'bg-accent border-accent text-on-accent' : d.today ? 'border-accent text-accent' : d.future ? 'border-border text-border' : 'border-surface-3 text-muted'}`}>
-                  {d.trained ? <IconCheck size={15} /> : <span className="text-[11px] font-bold tabular-nums">{new Date(d.date).getDate()}</span>}
-                </motion.div>
-              </div>
-            ))}
-          </div>
-        </Item>
-
-        {pending && <Item><SorenessCard workout={pending} /></Item>}
 
         <Item className="px-5">
           <div className="bg-accent text-on-accent rounded-[28px] p-5 shadow-[0_24px_60px_-24px_var(--color-accent)]">
@@ -143,7 +129,7 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
                 return (
                   <Press key={d.id} onClick={() => toggle(d.id)} aria-pressed={on}
                     className={`h-11 px-4 rounded-full font-bold text-[15px] flex items-center gap-2 border-2 transition-colors ${on ? 'bg-on-accent text-accent border-on-accent' : 'border-on-accent/30 text-on-accent'}`}>
-                    <span>{d.emoji}</span>{d.name}
+                    <MuscleGlyph muscles={dayMuscles(d, exMap)} size={26} className="-ml-1.5" />{d.name}
                   </Press>
                 )
               })}
@@ -152,13 +138,13 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
               <AnimatePresence mode="popLayout" initial={false}>
                 {pickedDays.length > 0 ? (
                   <motion.div key="go" className="flex-1" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={spring}>
-                    <Press onClick={() => start(pickedDays)} className="w-full h-14 rounded-full bg-on-accent text-accent font-extrabold text-base flex items-center justify-center gap-2">
+                    <Press onClick={e => start(pickedDays, e.currentTarget.getBoundingClientRect())} className="w-full h-14 rounded-full bg-on-accent text-accent font-extrabold text-base flex items-center justify-center gap-2">
                       Empezar {pickedDays.map(d => d.name).join(' + ')} <IconChevron size={18} />
                     </Press>
                   </motion.div>
                 ) : (
                   <motion.div key="free" className="flex-1" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={spring}>
-                    <Press onClick={() => start([])} className="w-full h-12 rounded-full border-2 border-on-accent/30 text-on-accent font-bold text-[15px] flex items-center justify-center gap-2">
+                    <Press onClick={e => start([], e.currentTarget.getBoundingClientRect())} className="w-full h-12 rounded-full border-2 border-on-accent/30 text-on-accent font-bold text-[15px] flex items-center justify-center gap-2">
                       Entrenamiento libre <IconChevron size={18} />
                     </Press>
                   </motion.div>
@@ -168,10 +154,26 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
           </div>
         </Item>
 
+        {pending && <Item><SorenessCard workout={pending} /></Item>}
+
+        <Item className="px-5">
+          <div className="card px-4 py-3.5 flex justify-between">
+            {week.map((d, i) => (
+              <div key={d.date} className="flex flex-col items-center gap-1.5">
+                <div className={`text-[11px] font-bold ${d.today ? 'text-text' : 'text-muted'}`}>{DAY_LETTERS[i]}</div>
+                <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring, delay: 0.15 + i * 0.04 }}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${d.trained ? 'bg-accent border-accent text-on-accent' : d.today ? 'border-accent text-accent' : d.future ? 'border-border text-border' : 'border-surface-3 text-muted'}`}>
+                  {d.trained ? <IconCheck size={15} /> : <span className="text-[11px] font-bold tabular-nums">{new Date(d.date).getDate()}</span>}
+                </motion.div>
+              </div>
+            ))}
+          </div>
+        </Item>
+
         <Item className="px-5 flex gap-2.5">
-          <Stat icon={<IconDumbbell size={18} />} value={String(thisWeek.length)} label="esta semana" />
-          <Stat icon={<IconFlame size={18} />} value={`${streak} sem`} label="racha" />
-          <Stat icon={<IconTrophy size={18} />} value={String(prs.length)} label="récords" />
+          <Stat icon={<IconDumbbell size={18} />} value={<CountUp value={thisWeek.length} delay={0.2} />} label="esta semana" />
+          <Stat icon={<IconFlame size={18} />} value={<><CountUp value={streak} delay={0.3} /> sem</>} label="racha" />
+          <Stat icon={<IconTrophy size={18} />} value={<CountUp value={prs.length} delay={0.4} />} label="récords" />
         </Item>
 
         <Item className="px-5">
@@ -179,7 +181,7 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
             <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="label">Volumen · 8 semanas</div>
-                <div className="text-[22px] font-extrabold leading-tight mt-1 tabular-nums">{fmtKg(Math.round(weekVolume))} <span className="text-sm text-muted font-bold">kg esta semana</span></div>
+                <div className="text-[22px] font-extrabold leading-tight mt-1 tabular-nums"><CountUp value={weekVolume} duration={1.1} delay={0.3} format={v => fmtKg(Math.round(v))} /> <span className="text-sm text-muted font-bold">kg esta semana</span></div>
               </div>
               {volDelta !== null && (
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${volDelta >= 0 ? 'bg-good/15 text-good' : 'bg-bad/15 text-bad'}`}>{volDelta >= 0 ? '+' : ''}{volDelta}%</span>
@@ -220,7 +222,7 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: () => void }) {
             {recent.map(w => (
               <motion.div key={w.id} variants={itemVariants}>
                 <Press onClick={() => setDetail(w)} className="card w-full p-3 pl-3.5 text-left flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center shrink-0"><IconDumbbell size={20} className="text-muted" /></div>
+                  <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center shrink-0 text-accent">{w.muscles.length ? <MuscleGlyph muscles={w.muscles} size={34} /> : <IconDumbbell size={20} className="text-muted" />}</div>
                   <div className="flex-1 min-w-0">
                     <div className="font-extrabold truncate">{w.name.replace(/^\p{Emoji}\S*\s*/u, '')}</div>
                     <div className="text-muted text-xs">{relTime(w.finishedAt!, now)} · {w.entries.length} ejercicios · {fmtKg(totalVolume(w))} kg</div>

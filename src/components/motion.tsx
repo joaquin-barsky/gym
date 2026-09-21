@@ -1,5 +1,5 @@
-import { motion, type HTMLMotionProps, type Variants } from 'motion/react'
-import type { ReactNode } from 'react'
+import { animate, motion, useMotionValue, useTransform, type HTMLMotionProps, type Variants } from 'motion/react'
+import { useEffect, type ReactNode } from 'react'
 
 export const spring = { type: 'spring', stiffness: 420, damping: 32, mass: 0.8 } as const
 export const softSpring = { type: 'spring', stiffness: 260, damping: 28 } as const
@@ -61,4 +61,17 @@ export function Ring({ value, size = 52, stroke = 5, color = 'var(--color-accent
       <div className="absolute inset-0 flex items-center justify-center">{children}</div>
     </div>
   )
+}
+
+/** Número que cuenta desde 0 (o desde el valor anterior) hasta `value`. */
+export function CountUp({ value, format = (v: number) => String(Math.round(v)), duration = 0.9, delay = 0 }: {
+  value: number; format?: (v: number) => string; duration?: number; delay?: number
+}) {
+  const mv = useMotionValue(0)
+  const text = useTransform(mv, v => format(v))
+  useEffect(() => {
+    const c = animate(mv, value, { duration, delay, ease: easeOut })
+    return () => c.stop()
+  }, [value, duration, delay, mv])
+  return <motion.span className="tabular-nums">{text}</motion.span>
 }

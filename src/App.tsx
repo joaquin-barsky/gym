@@ -13,6 +13,7 @@ import Settings from './pages/Settings'
 import WorkoutPage from './pages/WorkoutPage'
 import Splash from './components/Splash'
 import TimerWatcher from './components/TimerWatcher'
+import WorkoutSummary, { type Summary } from './components/WorkoutSummary'
 
 type Tab = 'home' | 'routine' | 'progress' | 'timer' | 'settings'
 
@@ -69,6 +70,23 @@ export default function App() {
   const theme = useSetting<string>('theme', DEFAULT_THEME)
   const t = useTimer()
   const timerActive = t.running || t.accumulated > 0
+  const [summary, setSummary] = useState<Summary | null>(null)
+  // Transición "el botón se expande": rectángulo del botón → pantalla completa → aparece el entrenamiento.
+  const [launch, setLaunch] = useState<{ rect: DOMRect; phase: 'grow' | 'fade' } | null>(null)
+
+  const openWorkout = (from?: DOMRect) => {
+    if (!from) { setWorkoutOpen(true); return }
+    setLaunch({ rect: from, phase: 'grow' })
+  }
+  // Red de seguridad: si una animación no termina (pestaña en segundo plano), igual se abre.
+  useEffect(() => {
+    if (!launch) return
+    const id = setTimeout(() => {
+      if (launch.phase === 'grow') { setWorkoutOpen(true); setLaunch(l => l && { ...l, phase: 'fade' }) }
+      else setLaunch(null)
+    }, launch.phase === 'grow' ? 900 : 800)
+    return () => clearTimeout(id)
+  }, [launch])
 
   useEffect(() => { seedIfEmpty().then(() => setReady(true)) }, [])
   useEffect(() => { applyTheme(theme) }, [theme])
@@ -82,7 +100,7 @@ export default function App() {
       <AnimatePresence mode="wait" initial={false}>
         {workoutOpen && active ? (
           <motion.div key="workout" className="h-full" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24, transition: { duration: 0.16 } }} transition={{ duration: 0.28, ease: easeOut }}>
-            <WorkoutPage workout={active} onClose={() => setWorkoutOpen(false)} />
+            <WorkoutPage workout={active} onClose={() => setWorkoutOpen(false)} onFinished={s => { setSummary(s); setWorkoutOpen(false) }} />
           </motion.div>
         ) : (
           <motion.div key="shell" className="h-full flex flex-col relative" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} transition={{ duration: 0.2 }}>
@@ -90,7 +108,7 @@ export default function App() {
               <div className="safe-top" />
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.12 } }} transition={{ duration: 0.22, ease: easeOut }}>
-                  {tab === 'home' && <Home onOpenWorkout={() => setWorkoutOpen(true)} />}
+                  {tab === 'home' && <Home onOpenWorkout={openWorkout} />}
                   {tab === 'routine' && <Routine />}
                   {tab === 'progress' && <Progress />}
                   {tab === 'timer' && <Timer />}
@@ -133,6 +151,29 @@ export default function App() {
         )}
       </AnimatePresence>
       )}
+
+      {launch && (
+        <motion.div className="fixed z-[58] bg-accent pointer-events-none flex items-center justify-center overflow-hidden"
+          initial={{ left: launch.rect.left, top: launch.rect.top, width: launch.rect.width, height: launch.rect.height, borderRadius: 28 }}
+          animate={launch.phase === 'grow'
+            ? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight, borderRadius: 0 }
+            : { opacity: 0 }}
+          transition={launch.phase === 'grow' ? { duration: 0.46, ease: [0.76, 0, 0.24, 1] } : { duration: 0.4, delay: 0.12, ease: 'easeOut' }}
+          onAnimationComplete={() => {
+            if (launch.phase === 'grow') { setWorkoutOpen(true); setLaunch(l => l && { ...l, phase: 'fade' }) }
+            else setLaunch(null)
+          }}>
+          <motion.svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="var(--color-on-accent)" strokeWidth="2.2" strokeLinecap="round"
+            initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: launch.phase === 'grow' ? 1 : 1.4, opacity: launch.phase === 'grow' ? 1 : 0 }}
+            transition={{ duration: 0.35, delay: launch.phase === 'grow' ? 0.18 : 0 }}>
+            <path d="M6 6v12M18 6v12M3 9v6M21 9v6M6 12h12" />
+          </motion.svg>
+        </motion.div>
+      )}
+
+      <AnimatePresence>
+        {summary && <WorkoutSummary key="summary" s={summary} onClose={() => { setSummary(null); setTab('home') }} />}
+      </AnimatePresence>
     </MotionConfig>
   )
 }
