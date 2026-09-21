@@ -8,8 +8,8 @@ export const G_DOT = { cx: 72.5, cy: 71.5, r: 6 }
 export const G_STROKE = 9.5
 
 /** Logo estático o dibujándose (para la intro). */
-export default function Logo({ size = 64, draw = false, delay = 0, color = 'var(--color-text)' }: {
-  size?: number; draw?: boolean; delay?: number; color?: string
+export default function Logo({ size = 64, draw = false, delay = 0, color = 'var(--color-text)', dotColor = 'var(--color-accent)' }: {
+  size?: number; draw?: boolean; delay?: number; color?: string; dotColor?: string
 }) {
   const t = (d: number) => ({ delay: delay + d, duration: 0.55, ease: [0.65, 0, 0.35, 1] as const })
   return (
@@ -19,7 +19,7 @@ export default function Logo({ size = 64, draw = false, delay = 0, color = 'var(
         initial={draw ? { pathLength: 0 } : false} animate={{ pathLength: 1 }} transition={t(0)} />
       <motion.path d={G_STEM} stroke={color} strokeWidth={G_STROKE} strokeLinecap="round" strokeLinejoin="round"
         initial={draw ? { pathLength: 0 } : false} animate={{ pathLength: 1 }} transition={t(0.28)} />
-      <motion.circle cx={G_DOT.cx} cy={G_DOT.cy} r={G_DOT.r} fill="var(--color-accent)"
+      <motion.circle cx={G_DOT.cx} cy={G_DOT.cy} r={G_DOT.r} fill={dotColor}
         initial={draw ? { y: -46, scale: 0.4, opacity: 0 } : false} animate={{ y: 0, scale: 1, opacity: 1 }}
         transition={draw ? { delay: delay + 0.72, type: 'spring', stiffness: 520, damping: 13 } : undefined} />
     </svg>

@@ -6,7 +6,7 @@ import { db } from '../db'
 import { useExercises, useWorkouts } from '../hooks'
 import { bestFor, fmtDate, fmtKg, historyFor, setsPerMusclePerWeek, workoutsPerWeek } from '../lib/stats'
 import { Empty, Header, Segmented } from '../components/ui'
-import { CountUp, Item, Press, Stagger, spring } from '../components/motion'
+import { Item, Press, Stagger, spring } from '../components/motion'
 import { IconDown, IconUp } from '../components/icons'
 import { MUSCLE_GROUPS } from '../muscles'
 import type { BodyWeight, MuscleId } from '../types'
@@ -108,7 +108,7 @@ function ExerciseView() {
         <div className="label">Mejor marca</div>
         <div className="flex items-end gap-2 mt-1">
           <div className="text-[48px] font-extrabold leading-none tracking-tight">
-            <CountUp value={best.weight?.weight ?? 0} format={v => fmtKg(Math.round(v * 2) / 2)} />
+            {fmtKg(best.weight?.weight ?? 0)}
           </div>
           <div className="text-lg font-extrabold text-muted pb-1">kg × {best.weight?.reps ?? 0}</div>
         </div>
@@ -142,7 +142,7 @@ function ExerciseView() {
 
       <div className="grid grid-cols-2 gap-2.5">
         <MiniStat label="Último" sub={last ? fmtDate(last.date) : undefined}>{last ? `${fmtKg(last.weight)} kg × ${last.reps}` : '—'}</MiniStat>
-        <MiniStat label="Sesiones" sub="registradas"><CountUp value={history.length} /></MiniStat>
+        <MiniStat label="Sesiones" sub="registradas">{history.length}</MiniStat>
       </div>
 
       <div className="card overflow-hidden">
@@ -211,7 +211,7 @@ function GeneralView() {
       <div className="card p-5 relative overflow-hidden">
         <div className="absolute -right-16 -top-16 w-52 h-52 rounded-full pointer-events-none" style={{ background: 'var(--color-accent)', filter: 'blur(70px)', opacity: 0.16 }} />
         <div className="label">Entrenamientos</div>
-        <div className="text-[48px] font-extrabold leading-none tracking-tight mt-1"><CountUp value={total} /></div>
+        <div className="text-[48px] font-extrabold leading-none tracking-tight mt-1">{total}</div>
         <div className="text-sm text-muted font-semibold mt-2">
           <b className="text-text">{perWeek[perWeek.length - 1]?.n ?? 0}</b> esta semana · {perWeek[perWeek.length - 2]?.n ?? 0} la pasada
         </div>
