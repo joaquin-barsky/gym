@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, exportAll, importAll, uid, wipeAll } from '../db'
 import { useSetting } from '../hooks'
 import { DEFAULT_THEME, THEMES } from '../themes'
+import { DEMO, setDemo } from '../lib/mode'
 import { Header, confirmDlg } from '../components/ui'
 import { Item, Stagger, spring } from '../components/motion'
 import { IconCheck } from '../components/icons'
@@ -72,6 +73,31 @@ export default function Settings() {
       <Item><Header title="Ajustes" /></Item>
 
       <Item className="px-5">
+        <div className={`card p-4 relative overflow-hidden ${DEMO ? 'border-accent/60' : ''}`}>
+          {DEMO && <div className="absolute -right-12 -top-12 w-40 h-40 rounded-full pointer-events-none" style={{ background: 'var(--color-accent)', filter: 'blur(60px)', opacity: 0.18 }} />}
+          <div className="relative flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-[17px] font-extrabold flex items-center gap-2">
+                Modo demo
+                {DEMO && <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-accent text-on-accent tracking-wider">ACTIVO</span>}
+              </div>
+              <div className="text-muted text-sm mt-1 leading-relaxed">
+                {DEMO
+                  ? 'Estás viendo 14 semanas de datos simulados. Desactivalo para volver a tus datos reales, que siguen intactos.'
+                  : 'Carga 14 semanas de datos simulados para mostrar la app en uso real. Tus datos quedan guardados aparte y vuelven al desactivarlo.'}
+              </div>
+            </div>
+            <motion.button whileTap={{ scale: 0.92 }} transition={spring} onClick={() => setDemo(!DEMO, theme)}
+              role="switch" aria-checked={DEMO} aria-label="Modo demo"
+              className={`relative shrink-0 w-[58px] h-[34px] rounded-full transition-colors duration-200 mt-0.5 ${DEMO ? 'bg-accent' : 'bg-surface-3'}`}>
+              <motion.span layout transition={{ type: 'spring', stiffness: 600, damping: 35 }}
+                className={`absolute top-[3px] w-7 h-7 rounded-full shadow ${DEMO ? 'right-[3px] bg-on-accent' : 'left-[3px] bg-white'}`} />
+            </motion.button>
+          </div>
+        </div>
+      </Item>
+
+      <Item className="px-5">
         <div className="text-[17px] font-extrabold mb-1">Tema</div>
         <div className="text-muted text-sm mb-4">Tocá uno y se aplica al instante.</div>
         <div className="grid grid-cols-2 gap-3">
@@ -110,6 +136,7 @@ export default function Settings() {
         </div>
       </Item>
 
+      {!DEMO && (
       <Item className="px-5">
         <div className="text-[17px] font-extrabold mb-3">Backup</div>
         <div className="card p-3 space-y-2">
@@ -120,6 +147,7 @@ export default function Settings() {
           {msg && <div className="text-sm text-center text-accent">{msg}</div>}
         </div>
       </Item>
+      )}
 
       {!isStandalone && (
         <Item className="px-5">
@@ -135,6 +163,7 @@ export default function Settings() {
         </Item>
       )}
 
+      {!DEMO && (
       <Item className="px-5">
         <div className="text-[17px] font-extrabold mb-3">Zona peligrosa</div>
         <button className="btn-danger w-full" onClick={async () => {
@@ -143,6 +172,7 @@ export default function Settings() {
           await wipeAll()
         }}>Borrar todos los datos</button>
       </Item>
+      )}
 
       <Item className="text-center text-xs text-muted pb-2">Gym Tracker · v1.1</Item>
     </Stagger>

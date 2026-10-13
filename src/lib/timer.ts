@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
+import { DEMO } from './mode'
 
 // Cronómetro / temporizador de descanso.
 // Guarda timestamps (no un contador), así sigue exacto aunque cambies de pestaña o cierres la app.
@@ -20,7 +21,7 @@ export interface TimerState {
   history: Rest[]
 }
 
-const KEY = 'gym_timer_v1'
+const KEY = DEMO ? 'gym_timer_demo' : 'gym_timer_v1'
 const DEFAULT: TimerState = {
   mode: 'stopwatch', running: false, startedAt: null, accumulated: 0,
   duration: 90_000, laps: [], alerted: false, sound: true, history: [],

@@ -2,6 +2,8 @@ import Dexie, { type Table } from 'dexie'
 import type { Activity, BodyWeight, Exercise, RoutineDay, Setting, Soreness, Workout } from './types'
 import { DEFAULT_DAYS, DEFAULT_EXERCISES } from './data/defaultExercises'
 import { V2_DAYS, V2_EXERCISES, V2_SEED_WORKOUT } from './data/routineV2'
+import { buildDemo } from './data/demo'
+import { DB_NAME, DEMO, demoTheme, takeFreshDemo } from './lib/mode'
 
 export class GymDB extends Dexie {
   exercises!: Table<Exercise, string>
@@ -13,7 +15,8 @@ export class GymDB extends Dexie {
   settings!: Table<Setting, string>
 
   constructor() {
-    super('gym-tracker')
+    // 'gym-tracker' = tus datos reales. 'gym-tracker-demo' = datos simulados del modo demo.
+    super(DB_NAME)
     this.version(1).stores({
       exercises: 'id, name, createdAt',
       days: 'id, order',
@@ -31,6 +34,7 @@ export const db = new GymDB()
 export const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36))
 
 export async function seedIfEmpty() {
+  if (DEMO) { await seedDemo(); return }
   await db.transaction('rw', db.exercises, db.days, async () => {
     if ((await db.exercises.count()) > 0) return
     await db.exercises.bulkPut(DEFAULT_EXERCISES)
@@ -50,6 +54,28 @@ async function migrateRoutineV2() {
       await db.workouts.add({ ...V2_SEED_WORKOUT, muscles: [...V2_SEED_WORKOUT.muscles], failureMuscles: [] })
     }
     await db.settings.put({ key: 'routine_v2', value: true })
+  })
+}
+
+/** Llena la base de demo. Solo puede tocar la base "gym-tracker-demo". */
+async function seedDemo() {
+  if (db.name !== 'gym-tracker-demo') throw new Error('La demo solo puede escribir en su propia base')
+  const fresh = takeFreshDemo()
+  if (!fresh && (await db.exercises.count()) > 0) return
+  const d = buildDemo()
+  await db.transaction('rw', [db.exercises, db.days, db.workouts, db.soreness, db.activities, db.bodyweight, db.settings], async () => {
+    // Se vacía tabla por tabla (sin cerrar la base) para regenerar con fechas de hoy.
+    await Promise.all([db.exercises.clear(), db.days.clear(), db.workouts.clear(), db.soreness.clear(), db.activities.clear(), db.bodyweight.clear(), db.settings.clear()])
+    await db.exercises.bulkPut(d.exercises)
+    await db.days.bulkPut(d.days)
+    await db.workouts.bulkPut(d.workouts)
+    await db.activities.bulkPut(d.activities)
+    await db.bodyweight.bulkPut(d.bodyweight)
+    await db.settings.bulkPut([
+      { key: 'routine_v2', value: true },
+      { key: 'theme', value: demoTheme() ?? 'lima' },
+      { key: 'week_goal', value: 4 },
+    ])
   })
 }
 
