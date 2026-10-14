@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DEMO } from '../lib/mode'
 import { db, uid } from '../db'
 import { useSetting, useSoreness, useWorkouts } from '../hooks'
 import { MUSCLE_LABEL } from '../muscles'
@@ -18,6 +19,7 @@ export function usePendingSoreness(): Workout | undefined {
   const dismissed = useSetting<string[]>('soreness_dismissed', [])
   const now = Date.now()
   const answered = new Set(soreness.map(s => s.workoutId))
+  if (DEMO) return undefined
   return workouts
     .filter(w => w.finishedAt && w.muscles.length > 0)
     .filter(w => now - w.finishedAt! > 10 * 3_600_000 && now - w.finishedAt! < 60 * 3_600_000)

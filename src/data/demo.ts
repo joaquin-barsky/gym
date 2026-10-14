@@ -1,4 +1,4 @@
-import type { Activity, BodyWeight, Exercise, MuscleId, RoutineDay, SetEntry, Workout } from '../types'
+import type { Activity, BodyWeight, Exercise, MuscleId, RoutineDay, SetEntry, Soreness, Workout } from '../types'
 import { DEFAULT_EXERCISES } from './defaultExercises'
 import { V2_DAYS, V2_EXERCISES } from './routineV2'
 
@@ -65,6 +65,7 @@ export interface DemoData {
   exercises: Exercise[]
   days: RoutineDay[]
   workouts: Workout[]
+  soreness: Soreness[]
   activities: Activity[]
   bodyweight: BodyWeight[]
 }
@@ -84,51 +85,68 @@ export function buildDemo(now = Date.now()): DemoData {
   const pick = ([a, b]: [number, number]) => a + Math.floor(r() * (b - a + 1))
 
   const workouts: Workout[] = []
+  const soreness: Soreness[] = []
+
+  const makeWorkout = (id: string, date: number, group: string[], allFailure: boolean): Workout => {
+    const t = Math.min(1, Math.pow((date - start.getTime()) / span, 0.85))
+    const entries: SetEntry[] = []
+    const seen = new Set<string>()
+    for (const dayId of group) {
+      for (const p of PLANS[dayId]) {
+        if (seen.has(p.id)) continue
+        seen.add(p.id)
+        const dip = !allFailure && r() < 0.12 ? -p.step : 0
+        const weight = Math.max(p.step, round(p.from + (p.to - p.from) * t + dip, p.step))
+        const sets = pick(p.sets)
+        entries.push({ exerciseId: p.id, weight, reps: pick(p.reps), sets, toFailure: allFailure || r() < 0.25, done: sets })
+      }
+    }
+    const muscles = [...new Set(entries.flatMap(e => exById.get(e.exerciseId)?.muscles ?? []))] as MuscleId[]
+    const failureMuscles = [...new Set(entries.filter(e => e.toFailure).flatMap(e => exById.get(e.exerciseId)?.muscles ?? []))] as MuscleId[]
+    return {
+      id, dayId: group[0], name: group.map(g => dayName.get(g)).join(' · '),
+      startedAt: date, finishedAt: date + (52 + Math.floor(r() * 30)) * 60_000,
+      entries, muscles, failureMuscles,
+    }
+  }
+
+  // Historial: todo lo anterior a los últimos 3 días.
+  const recentFrom = now - 3 * 86_400_000
   let rot = 0
   for (let w = 0; w < WEEKS; w++) {
     for (const wd of WEEKDAYS) {
       const date = new Date(start); date.setDate(start.getDate() + w * 7 + wd)
       date.setHours(18 + Math.floor(r() * 3), Math.floor(r() * 60))
-      if (date.getTime() >= today.getTime()) continue // hoy queda libre para la demo en vivo
-      const isRecent = today.getTime() - date.getTime() < 4 * 86_400_000
-      if (!isRecent && r() < 0.12) continue // alguna sesión salteada, como en la vida real
-
-      const group = ROTATION[rot++ % ROTATION.length]
-      const t = Math.pow((date.getTime() - start.getTime()) / span, 0.85)
-      const entries: SetEntry[] = []
-      const seen = new Set<string>()
-      for (const dayId of group) {
-        for (const p of PLANS[dayId]) {
-          if (seen.has(p.id)) continue
-          seen.add(p.id)
-          const dip = r() < 0.12 ? -p.step : 0
-          const weight = Math.max(p.step, round(p.from + (p.to - p.from) * t + dip, p.step))
-          const sets = pick(p.sets)
-          entries.push({ exerciseId: p.id, weight, reps: pick(p.reps), sets, toFailure: r() < 0.25, done: sets })
-        }
-      }
-      const muscles = [...new Set(entries.flatMap(e => exById.get(e.exerciseId)?.muscles ?? []))] as MuscleId[]
-      const failureMuscles = [...new Set(entries.filter(e => e.toFailure).flatMap(e => exById.get(e.exerciseId)?.muscles ?? []))] as MuscleId[]
-      const startedAt = date.getTime()
-      workouts.push({
-        id: `demo_w_${w}_${wd}`,
-        dayId: group[0],
-        name: group.map(id => dayName.get(id)).join(' · '),
-        startedAt,
-        finishedAt: startedAt + (52 + Math.floor(r() * 30)) * 60_000,
-        entries, muscles, failureMuscles,
-      })
+      if (date.getTime() >= recentFrom) continue
+      if (r() < 0.12) continue // alguna sesión salteada, como en la vida real
+      workouts.push(makeWorkout(`demo_w_${w}_${wd}`, date.getTime(), ROTATION[rot++ % ROTATION.length], false))
     }
+  }
+
+  // Últimos días armados a mano para que el muñequito muestre fatiga en distintos grados:
+  // pecho y tríceps recién entrenados (rojo), espalda y bíceps ayer (naranja), piernas antes de ayer (amarillo).
+  // Cada uno trae su respuesta de dolor cargada, así la demo no muestra la pregunta.
+  const RECENT: { id: string; hoursAgo: number; group: string[]; sore: 0 | 1 | 2 | 3 }[] = [
+    { id: 'demo_recent_piernas', hoursAgo: 34, group: ['day_pierna'], sore: 3 },
+    { id: 'demo_recent_espalda', hoursAgo: 20, group: ['day_espalda', 'day_biceps'], sore: 2 },
+    { id: 'demo_recent_pecho', hoursAgo: 2.5, group: ['day_pecho', 'day_triceps'], sore: 3 },
+  ]
+  for (const rw of RECENT) {
+    const startedAt = now - rw.hoursAgo * 3_600_000 - 65 * 60_000
+    const wk = makeWorkout(rw.id, startedAt, rw.group, true)
+    wk.finishedAt = now - rw.hoursAgo * 3_600_000
+    workouts.push(wk)
+    for (const m of wk.muscles) soreness.push({ id: `${rw.id}_${m}`, workoutId: rw.id, muscle: m, level: rw.sore, createdAt: wk.finishedAt + 12 * 3_600_000 })
   }
 
   const activities: Activity[] = []
   for (let w = 0; w < WEEKS; w++) {
     const sunday = new Date(start); sunday.setDate(start.getDate() + w * 7 + 6); sunday.setHours(11, 0)
-    if (sunday.getTime() < now && r() < 0.75) {
+    if (sunday.getTime() < recentFrom && r() < 0.75) {
       activities.push({ id: `demo_f_${w}`, type: 'football', name: 'Fútbol', date: sunday.getTime(), muscles: ['quads', 'hamstrings', 'glutes', 'calves', 'abs'], intensity: (2 + Math.floor(r() * 2)) as 2 | 3 })
     }
     const friday = new Date(start); friday.setDate(start.getDate() + w * 7 + 4); friday.setHours(21, 0)
-    if (friday.getTime() < now && r() < 0.5) {
+    if (friday.getTime() < recentFrom && r() < 0.5) {
       activities.push({ id: `demo_a_${w}`, type: 'forearm', name: 'Antebrazo', date: friday.getTime(), muscles: ['forearms'], intensity: 2 })
     }
   }
@@ -141,5 +159,5 @@ export function buildDemo(now = Date.now()): DemoData {
     bodyweight.push({ id: `demo_bw_${w}`, date: d.getTime(), kg: Math.round(kg * 10) / 10 })
   }
 
-  return { exercises: [...DEFAULT_EXERCISES, ...V2_EXERCISES], days, workouts, activities, bodyweight }
+  return { exercises: [...DEFAULT_EXERCISES, ...V2_EXERCISES], days, workouts, soreness, activities, bodyweight }
 }

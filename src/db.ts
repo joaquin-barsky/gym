@@ -61,7 +61,9 @@ async function migrateRoutineV2() {
 async function seedDemo() {
   if (db.name !== 'gym-tracker-demo') throw new Error('La demo solo puede escribir en su propia base')
   const fresh = takeFreshDemo()
-  if (!fresh && (await db.exercises.count()) > 0) return
+  const seededAt = (await db.settings.get('demo_seeded_at'))?.value as number | undefined
+  const stale = !seededAt || Date.now() - seededAt > 3 * 3_600_000
+  if (!fresh && !stale && (await db.exercises.count()) > 0) return
   const d = buildDemo()
   await db.transaction('rw', [db.exercises, db.days, db.workouts, db.soreness, db.activities, db.bodyweight, db.settings], async () => {
     // Se vacía tabla por tabla (sin cerrar la base) para regenerar con fechas de hoy.
@@ -69,12 +71,14 @@ async function seedDemo() {
     await db.exercises.bulkPut(d.exercises)
     await db.days.bulkPut(d.days)
     await db.workouts.bulkPut(d.workouts)
+    await db.soreness.bulkPut(d.soreness)
     await db.activities.bulkPut(d.activities)
     await db.bodyweight.bulkPut(d.bodyweight)
     await db.settings.bulkPut([
       { key: 'routine_v2', value: true },
       { key: 'theme', value: demoTheme() ?? 'lima' },
       { key: 'week_goal', value: 4 },
+      { key: 'demo_seeded_at', value: Date.now() },
     ])
   })
 }
