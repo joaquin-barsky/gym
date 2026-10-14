@@ -14,7 +14,6 @@ import WorkoutPage from './pages/WorkoutPage'
 import Splash from './components/Splash'
 import TimerWatcher from './components/TimerWatcher'
 import WorkoutSummary, { type Summary } from './components/WorkoutSummary'
-import { DEMO } from './lib/mode'
 
 type Tab = 'home' | 'routine' | 'progress' | 'timer' | 'settings'
 
@@ -96,12 +95,6 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <TimerWatcher />
-      {DEMO && !splash && (
-        <div className="fixed left-1/2 -translate-x-1/2 z-[45] pointer-events-none flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-accent text-on-accent text-[10px] font-extrabold tracking-[0.18em] shadow-[0_6px_20px_-6px_var(--color-accent)]"
-          style={{ top: 'calc(env(safe-area-inset-top) + 6px)' }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-on-accent animate-pulse" />DEMO
-        </div>
-      )}
       {splash && <Splash onDone={() => setSplash(false)} />}
       {!ready ? <div className="h-full bg-bg" /> : (
       <AnimatePresence mode="wait" initial={false}>
@@ -113,7 +106,6 @@ export default function App() {
           <motion.div key="shell" className="h-full flex flex-col relative" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} transition={{ duration: 0.2 }}>
             <main className="flex-1 overflow-y-auto pb-[190px]">
               <div className="safe-top" />
-              {DEMO && <div className="h-7" />}
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.12 } }} transition={{ duration: 0.22, ease: easeOut }}>
                   {tab === 'home' && <Home onOpenWorkout={openWorkout} />}
