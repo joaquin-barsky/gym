@@ -24,7 +24,7 @@ function AreaTrend({ data, dataKey, unit = '', height = 190 }: { data: Record<st
   return (
     <div style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 10, right: 8, left: 5, bottom: 0 }}>
           <defs>
             <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" style={{ stopColor: 'var(--color-accent)', stopOpacity: 0.45 }} />
@@ -32,7 +32,7 @@ function AreaTrend({ data, dataKey, unit = '', height = 190 }: { data: Record<st
             </linearGradient>
           </defs>
           <XAxis dataKey="label" {...axis} minTickGap={18} />
-          <YAxis {...axis} domain={['auto', 'auto']} width={44} />
+          <YAxis {...axis} domain={['auto', 'auto']} width="auto" />
           <Tooltip {...tooltipStyle} formatter={(v) => [`${v}${unit}`, '']} separator="" />
           <Area type="monotone" dataKey={dataKey} stroke="var(--color-accent)" strokeWidth={3} fill={`url(#${gid})`}
             dot={{ r: 3.5, fill: 'var(--color-bg)', stroke: 'var(--color-accent)', strokeWidth: 2 }}
