@@ -4,7 +4,8 @@ import { motion } from 'motion/react'
 export default function Ambient() {
   const blob = 'absolute rounded-full will-change-transform'
   return (
-    <div className="absolute inset-x-0 top-0 h-[760px] overflow-hidden pointer-events-none" aria-hidden>
+    <div className="absolute inset-x-0 overflow-hidden pointer-events-none" aria-hidden
+      style={{ top: 'calc(-1 * env(safe-area-inset-top))', height: 'calc(760px + env(safe-area-inset-top))' }}>
       <motion.div className={blob} style={{ width: 440, height: 440, left: -160, top: -200, background: 'var(--color-accent)', filter: 'blur(90px)', opacity: 0.34 }}
         animate={{ x: [0, 50, -20, 0], y: [0, 40, 70, 0], scale: [1, 1.15, 0.95, 1] }} transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }} />
       <motion.div className={blob} style={{ width: 380, height: 380, right: -180, top: 40, background: 'var(--color-accent)', filter: 'blur(100px) hue-rotate(70deg)', opacity: 0.22 }}

@@ -66,6 +66,7 @@ export default function App() {
   const [ready, setReady] = useState(false)
   const [workoutOpen, setWorkoutOpen] = useState(false)
   const [splash, setSplash] = useState(true)
+  const [scrolled, setScrolled] = useState(false)
   const active = useActiveWorkout()
   const theme = useSetting<string>('theme', DEFAULT_THEME)
   const t = useTimer()
@@ -104,7 +105,7 @@ export default function App() {
           </motion.div>
         ) : (
           <motion.div key="shell" className="h-full flex flex-col relative" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} transition={{ duration: 0.2 }}>
-            <main className="flex-1 overflow-y-auto pb-[190px]">
+            <main className="flex-1 overflow-y-auto pb-[190px]" onScroll={e => setScrolled(e.currentTarget.scrollTop > 8)}>
               <div className="safe-top" />
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.12 } }} transition={{ duration: 0.22, ease: easeOut }}>
@@ -116,6 +117,9 @@ export default function App() {
                 </motion.div>
               </AnimatePresence>
             </main>
+
+            <div className="absolute inset-x-0 top-0 z-30 pointer-events-none transition-opacity duration-300"
+              style={{ height: 'calc(env(safe-area-inset-top) + 28px)', opacity: scrolled ? 1 : 0, background: 'linear-gradient(to bottom, var(--color-bg) 0%, var(--color-bg) 55%, transparent 100%)' }} />
 
             <div className="absolute left-0 right-0 z-40 flex flex-col items-center gap-2.5 px-6 pointer-events-none" style={{ bottom: 'max(calc(env(safe-area-inset-bottom) - 10px), 12px)' }}>
               <AnimatePresence>
@@ -136,7 +140,7 @@ export default function App() {
                   const on = tab === tb.id
                   const ticking = tb.id === 'timer' && t.running && !on
                   return (
-                    <motion.button key={tb.id} onClick={() => setTab(tb.id)} whileTap={{ scale: 0.88 }} transition={spring}
+                    <motion.button key={tb.id} onClick={() => { setTab(tb.id); setScrolled(false) }} whileTap={{ scale: 0.88 }} transition={spring}
                       className="relative w-14 h-14 rounded-full flex items-center justify-center"
                       aria-label={tb.label} aria-current={on ? 'page' : undefined}>
                       {on && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-full bg-accent" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
