@@ -35,10 +35,16 @@ export const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random(
 
 export async function seedIfEmpty() {
   if (DEMO) { await seedDemo(); return }
-  await db.transaction('rw', db.exercises, db.days, async () => {
+  await db.transaction('rw', db.exercises, db.days, db.settings, async () => {
     if ((await db.exercises.count()) > 0) return
+    // Instalación nueva: rutina base, sin entrenamientos ni pesos de nadie.
+    // 'routine_v2' evita la migración vieja, que carga el entrenamiento del 15/09 de Joaquín.
     await db.exercises.bulkPut(DEFAULT_EXERCISES)
     await db.days.bulkPut(DEFAULT_DAYS)
+    await db.settings.bulkPut([
+      { key: 'routine_v2', value: true },
+      { key: 'blank_start', value: true },
+    ])
   })
   await migrateRoutineV2()
 }

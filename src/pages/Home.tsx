@@ -61,6 +61,7 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: (from?: DOMRect
   const pending = usePendingSoreness()
   const now = useNow()
   const WEEK_GOAL = useSetting<number>('week_goal', 4)
+  const blankStart = useSetting<boolean>('blank_start', false)
   const [detail, setDetail] = useState<Workout | null>(null)
   const [picked, setPicked] = useState<string[]>([])
   const exMap = useMemo(() => new Map(exercises.map(e => [e.id, e])), [exercises])
@@ -71,7 +72,7 @@ export default function Home({ onOpenWorkout }: { onOpenWorkout: (from?: DOMRect
     const ids = [...new Set(selected.flatMap(d => d.exerciseIds))]
     const entries: SetEntry[] = ids.map(exerciseId => {
       const last = lastFor(exerciseId, workouts)
-      const ref = V2_REFERENCE[exerciseId]
+      const ref = blankStart ? undefined : V2_REFERENCE[exerciseId]
       return { exerciseId, weight: last?.weight ?? ref?.weight ?? 0, reps: last?.reps ?? ref?.reps ?? 0, sets: last?.sets ?? ref?.sets ?? 3, toFailure: false }
     })
     const name = selected.length ? selected.map(d => d.name).join(' · ') : 'Libre'

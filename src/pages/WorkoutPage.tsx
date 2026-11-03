@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { db } from '../db'
-import { useExercises, useNow, useWorkouts } from '../hooks'
+import { useExercises, useNow, useSetting, useWorkouts } from '../hooks'
 import { bestFor, compareEntry, fmtKg, lastFor, relTime, totalVolume, type Compare } from '../lib/stats'
 import BodyMap from '../components/BodyMap'
 import ExercisePicker from '../components/ExercisePicker'
@@ -128,6 +128,7 @@ function TimerChip({ onClick }: { onClick: () => void }) {
 export default function WorkoutPage({ workout, onClose, onFinished }: { workout: Workout; onClose: () => void; onFinished: (s: Summary) => void }) {
   const exercises = useExercises()
   const workouts = useWorkouts()
+  const blankStart = useSetting<boolean>('blank_start', false)
   const [picker, setPicker] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [selected, setSelected] = useState<Set<MuscleId>>(new Set())
@@ -239,7 +240,7 @@ export default function WorkoutPage({ workout, onClose, onFinished }: { workout:
 
       <ExercisePicker open={picker} onClose={() => setPicker(false)} exclude={entries.map(e => e.exerciseId)} onPick={ex => {
         const last = lastFor(ex.id, workouts, workout.id)
-        const ref = V2_REFERENCE[ex.id]
+        const ref = blankStart ? undefined : V2_REFERENCE[ex.id]
         update(prev => [...prev, { exerciseId: ex.id, weight: last?.weight ?? ref?.weight ?? 0, reps: last?.reps ?? ref?.reps ?? 0, sets: last?.sets ?? ref?.sets ?? 3, toFailure: false }])
         setPicker(false)
       }} />
